@@ -177,10 +177,13 @@ class FastenerLine(BaseModel):
 
 
 class WeldLine(BaseModel):
-    parts: list[str]
+    parts: list[str]                                       # [attached part, base part]
     size_mm: float
-    length_mm: float                                       # per joint
+    length_mm: float                                       # per joint, computed from BOM geometry x sides
     count: int                                             # joints per assembly
+    edge: str = ""                                         # length | width | perimeter | circumference
+    sides: int = 1
+    tack: bool = False                                     # tack welds carry no weld-metal estimate
     evidence: str = ""                                     # grid cell / view label the model cited
     total_length_m: float = 0.0                            # × count × assembly qty
     weld_metal_kg: float = 0.0
