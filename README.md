@@ -27,8 +27,10 @@ Streamlit app for Tekla structural-steel fabrication drawings (vector PDF, TATA 
   total qty, unit weight, calculated weight, drawing weight, difference and grade.
   - Plates use 7.85 × t kg/m². Rolled sections use IS 808 handbook kg/m (`drawing_qa/steel_tables.py`, source cited).
   - Welded WH/T members are listed as their plates.
-  - OpenAI supplies unit weights for sections missing from the table, accepted only within ±5% of the drawing
-    weight, and breaks down unknown sections.
+  - Rolled cones (SPD) are developed into plates.
+  - For rolled designations missing from the table, OpenAI supplies a handbook unit weight. It is always shown as
+    unverified, beside the drawing's value.
+  - OpenAI breaks down any other unknown section, and the breakdown is weight- and thickness-checked.
   - Download the BOQ as Excel with live formulas and SUBTOTALs.
 
   Benchmark against a reference workbook:
@@ -38,7 +40,7 @@ Streamlit app for Tekla structural-steel fabrication drawings (vector PDF, TATA 
   On 16807 against `2GU1 BOQ.xlsx`:
   - 8/8 rows and 135/136 fields identical; the only difference is the reference's own grade typo (`E2350A`,
     where the BOM says `E350A`);
-  - 0 formula differences;
+  - 0 formula differences, and the evaluated exported workbook matches cell by cell;
   - all SUBTOTALs equal.
 
 ## Run

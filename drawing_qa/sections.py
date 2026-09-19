@@ -8,7 +8,10 @@ Parsed deterministically (families seen on the sample sheets):
   ROD d                     round bar
   WH d X b X tf X tw        welded H: 2 flanges b x tf + web (d - 2 tf) x tw
   T d X b X tf X tw         welded tee: 1 flange b x tf + web (d - tf) x tw
-Anything else (e.g. SPD508*508*608*608*8) is 'unknown' and goes to the LLM, whose answer must pass
+  SPD d1*d1*d2*d2*t         conical reducer (circular frustum) rolled from one plate t: developed on the mean
+                            diameters (d - t), width = mean circumference, length = slant height
+                            (16362 1m470: 55.17 kg vs BOM 54.93, +0.44%)
+Anything else (e.g. a non-circular transition) is 'unknown' and goes to the LLM, whose answer must pass
 the same weight check before it is used."""
 import re
 from dataclasses import dataclass
@@ -64,7 +67,17 @@ def parse_section(section: str) -> Parsed:
         return Parsed("pipe", s)
     if re.fullmatch(rf"ROD{N}", s):
         return Parsed("round", s)
+    if (m := re.fullmatch(rf"SPD{N}\*{N}\*{N}\*{N}\*{N}", s)) and m[1] == m[2] and m[3] == m[4]:
+        return Parsed("cone", s, d=float(m[1]), b=float(m[3]), thickness_mm=float(m[5]))
     return Parsed("unknown", s)
+
+
+def develop_cone(p: Parsed, height_mm: float) -> Plate:
+    """Flat plate of a circular frustum (end diameters d, b; plate t; axial length h) on the mean diameters."""
+    import math
+    r1, r2 = (p.d - p.thickness_mm) / 2, (p.b - p.thickness_mm) / 2
+    slant = math.hypot(height_mm, r2 - r1)
+    return Plate(p.thickness_mm, round(math.pi * (r1 + r2), 1), round(slant, 1), 1)
 
 
 def decompose(p: Parsed, length_mm: float) -> list[Plate]:

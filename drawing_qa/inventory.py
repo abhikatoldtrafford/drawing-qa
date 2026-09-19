@@ -25,7 +25,7 @@ from .config import SCHEMA_VERSION
 from .context import page_context
 from .geometry import num, xc, yc
 from .models import Check, FastenerLine, Inventory, InventoryItem, PlateLine, SectionLine, WeldLine
-from .sections import STEEL_KG_M3, Plate, decompose, parse_section, weight_matches
+from .sections import STEEL_KG_M3, Plate, decompose, develop_cone, parse_section, weight_matches
 
 FILLET_SIZES = {3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 25}
 ELECTRODE_PER_WELD_METAL = 1 / 0.6          # ~60 % deposition efficiency for manual metal arc (estimate)
@@ -83,8 +83,9 @@ cells, and images of the whole sheet), its validated bill of materials, and a li
    tack = true only if the drawing says the part is tack welded;
    evidence = view label and/or grid cell where you read it.
    Do not give lengths: they are computed from the bill of materials. Do not invent welds you cannot see.
-3. unit_weights: for each MISSING section listed, its handbook weight per metre in kg/m (IS 808 / steel
-   handbook value for that designation). Omit a section if you do not know the handbook value."""
+3. unit_weights: for each MISSING rolled section listed, its IS 808 handbook weight per metre in kg/m for
+   that exact designation. Omit a section if you do not know the handbook value; never estimate from the
+   drawing."""
 
 
 def _asm_qty(x):
@@ -166,17 +167,20 @@ def deterministic_inventory(x) -> Inventory:
             add_plate(ps.thickness_mm, p.material, q, ps.width_mm * (p.length_mm or 0) * q / 1e6,
                       (p.gross_kg or 0) * q_asm, p.item_no)
             continue
-        if ps.family == "built_up":
-            pls = decompose(ps, p.length_mm or 0)
+        if ps.family in ("built_up", "cone"):
+            pls = decompose(ps, p.length_mm or 0) if ps.family == "built_up" else [develop_cone(ps, p.length_mm or 0)]
             if weight_matches(pls, p.pc_wt, (p.net_kg or 0) / (p.qty or 1)):
-                for pl in pls:
-                    add_plate(pl.thickness_mm, p.material, pl.count * q, pl.area_m2 * q, pl.weight_kg * q,
-                              f"{p.item_no} ({ps.kind} {pl.width_mm:g}x{pl.thickness_mm:g})")
+                kind = ps.kind if ps.family == "built_up" else "cone"
+                share = sum(pl.weight_kg for pl in pls) or 1.0
+                for pl in pls:                        # drawing (gross) weight shared by plate weight, as in the BOQ
+                    add_plate(pl.thickness_mm, p.material, pl.count * q, pl.area_m2 * q,
+                              (p.gross_kg or 0) * q_asm * pl.weight_kg / share,
+                              f"{p.item_no} ({kind} {pl.width_mm:g}x{pl.thickness_mm:g})")
                 continue
             inv.checks.append(Check(id=f"inventory.decompose.{p.item_no}", level="warn", region="inventory",
                                     message=f"{p.item_no} {p.section}: plate recipe does not match BOM weight; "
                                             "kept as a section."))
-        family = "built-up" if ps.family == "built_up" else ("other" if ps.family == "unknown" else ps.family)
+        family = {"built_up": "built-up", "unknown": "other"}.get(ps.family, ps.family)
         sl = sections.setdefault((ps.profile, p.material), SectionLine(profile=ps.profile, family=family,
                                                                        grade=p.material, pieces=0,
                                                                        total_length_m=0, weight_kg=0))
@@ -292,12 +296,12 @@ def _cache_file(cache_dir, x, model, deep_model):
 
 def _ask(x, page, layout, llm, model, unknown):
     """One structured OpenAI call with the whole page. Returns (InventoryLLM, None) or (None, error text)."""
-    bom_txt = "\n".join(f"{p.item_no} | {p.section} | L={p.length_mm} | qty={p.qty} | pc_wt={p.pc_wt} | {p.material}"
-                        for p in x.bom.parts)
+    bom_txt = "\n".join(f"{p.item_no} | {p.section} | L={p.length_mm} | qty={p.qty} | {p.material}"
+                        for p in x.bom.parts)          # no weights: code checks breakdowns against them
     asm = x.bom.assembly
     missing = sorted(missing_unit_weights(x))
     text = (f"ASSEMBLY {asm.erection_mark if asm else ''} x {asm.qty if asm and asm.qty else 1}\n"
-            f"BOM (mark | section | length mm | qty | piece kg | grade):\n{bom_txt}\nNOTES:\n" + "\n".join(x.notes)
+            f"BOM (mark | section | length mm | qty | grade):\n{bom_txt}\nNOTES:\n" + "\n".join(x.notes)
             + f"\nUNKNOWN sections: {unknown or 'none'}\nMISSING unit weights: {missing or 'none'}")
     try:
         content = page_context(page, layout) + [{"type": "input_text", "text": text}]
@@ -372,20 +376,20 @@ def _mark(s, known):
 
 
 def _apply_unit_weights(inv, answers, missing) -> dict:
-    """Accept a model handbook unit weight only within 5% of the drawing-implied kg/m for that section."""
-    accepted, rejected = {}, []
+    """Use an OpenAI handbook unit weight for a rolled designation missing from the table. It is NOT accepted by
+    agreement with the drawing (that would be circular: coped or notched parts differ legitimately, and a value
+    copied from the drawing would pass); it is always shown as unverified, beside the drawing-implied kg/m."""
+    used = {}
     for a in answers:
-        ref = missing.get(a.section.replace(" ", "").upper())
-        if ref is None:
-            continue
-        if a.kg_per_m > 0 and abs(a.kg_per_m - ref) <= 0.05 * ref:
-            accepted[a.section.replace(" ", "").upper()] = (a.kg_per_m, "OpenAI handbook value (within 5% of drawing); verify")
-        else:
-            rejected.append(f"{a.section}: {a.kg_per_m} kg/m vs drawing {ref:.2f} kg/m")
-    if rejected:
+        key = a.section.replace(" ", "").upper()
+        if key in missing and a.kg_per_m > 0:
+            used[key] = (a.kg_per_m, "OpenAI handbook value (unverified)")
+    if used:
+        shown = [f"{k}: {v[0]} kg/m (drawing {missing[k]:.2f} kg/m)" if missing[k] else f"{k}: {v[0]} kg/m"
+                 for k, v in used.items()]
         _set_check(inv, Check(id="boq.unit_weights", level="warn", region="inventory",
-                              message=f"OpenAI unit weights rejected (>5% from drawing): {rejected}"))
-    return accepted
+                              message=f"Unit weights from OpenAI, not in the handbook table; verify: {shown}"))
+    return used
 
 
 def _apply_unknown(inv, answers, rows, unknown):

@@ -35,6 +35,9 @@ def main(pdf, gt, use_openai=False):
     print(f"formulas: {len(res['formula_diffs'])} structural differences")
     for d in res["formula_diffs"]:
         print(f"  FORMULA {d['item']:10} col {d['col']}: ours={d['ours']!r} reference={d['gt']!r}")
+    print(f"exported workbook, evaluated: {len(res['evaluated_diffs'])} cell differences from the reference")
+    for d in res["evaluated_diffs"]:
+        print(f"  EVAL {d['item']:10} col {d['col']}: ours={d['ours']!r} reference={d['gt']!r}")
     print("subtotals (row 1):")
     for k, v in res["totals"].items():
         print(f"  {k:14} ours {v['ours']:12.4f}  reference {v['gt']:12.4f}  {'OK' if v['match'] else 'DIFF'}")

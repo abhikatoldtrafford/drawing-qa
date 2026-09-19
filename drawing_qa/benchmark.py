@@ -38,6 +38,37 @@ def _shape(formula, row):
     return re.sub(rf"([A-Z]){row}\b", r"\1#", str(formula)) if isinstance(formula, str) else formula
 
 
+_REF = re.compile(r"\b([A-Z])(\d+)\b")
+_SUBTOTAL = re.compile(r"^=SUBTOTAL\(9,([A-Z])(\d+):\1(\d+)\)$")
+_SAFE = re.compile(r"^[\d.+\-*/() ]*$")
+
+
+def evaluate(ws, cell, _depth=0):
+    """Value of a cell as a spreadsheet would compute it, for the formula shapes the BOQ uses
+    (arithmetic on cell references and constants, and SUBTOTAL(9, range))."""
+    v = ws[cell].value
+    if not (isinstance(v, str) and v.startswith("=")):
+        return v
+    if _depth > 20:
+        raise ValueError(f"formula nesting too deep at {cell}")
+    if m := _SUBTOTAL.match(v):
+        col, lo, hi = m[1], int(m[2]), min(int(m[3]), ws.max_row)
+        vals = (evaluate(ws, f"{col}{r}", _depth + 1) for r in range(lo, hi + 1))
+        return sum(x for x in vals if isinstance(x, (int, float)))
+    expr = _REF.sub(lambda m: repr(float(evaluate(ws, m.group(0), _depth + 1) or 0)), v[1:])
+    if not _SAFE.match(expr):
+        raise ValueError(f"unsupported formula {v!r} at {cell}")
+    return eval(expr, {"__builtins__": {}})                  # digits and operators only (checked above)
+
+
+def evaluated_rows(inventory) -> dict:
+    """{item_no: {col: evaluated value}} for the exported BOQ sheet, plus '__subtotals__'."""
+    ws = openpyxl.load_workbook(io.BytesIO(boq_excel(inventory)), data_only=False).active
+    out = {item: {col: evaluate(ws, f"{col}{r}") for col in "JKLMNOP"} for item, r in _rows(ws).items()}
+    out["__subtotals__"] = {col: evaluate(ws, f"{col}1") for col in "JLMNOP"}
+    return out
+
+
 def compare_boq(inventory, gt_path, tol=1e-6) -> dict:
     gt_v = openpyxl.load_workbook(gt_path, data_only=True).active
     gt_f = openpyxl.load_workbook(gt_path, data_only=False).active
@@ -63,8 +94,18 @@ def compare_boq(inventory, gt_path, tol=1e-6) -> dict:
                       ("O", "total_drg_wt"), ("P", "difference")):
         mine = sum(getattr(r, attr) or 0 for r in inventory.boq)
         totals[attr] = {"ours": mine, "gt": gt_v[f"{col}1"].value, "match": _same(mine, gt_v[f"{col}1"].value, 1e-6)}
+    # what the exported workbook actually computes, cell by cell, against the reference's values
+    ev, eval_diffs = evaluated_rows(inventory), []
+    for item, gr in gt_rows.items():
+        for col in "JKLMNOP":
+            if item in ev and not _same(ev[item][col], gt_v[f"{col}{gr}"].value, 1e-6):
+                eval_diffs.append({"item": item, "col": col, "ours": ev[item][col], "gt": gt_v[f"{col}{gr}"].value})
+    for col in "JLMNOP":
+        if not _same(ev["__subtotals__"][col], gt_v[f"{col}1"].value, 1e-6):
+            eval_diffs.append({"item": "SUBTOTAL", "col": col, "ours": ev["__subtotals__"][col],
+                               "gt": gt_v[f"{col}1"].value})
     return {
-        "gt_rows": len(gt_rows), "our_rows": len(ours),
+        "gt_rows": len(gt_rows), "our_rows": len(ours), "evaluated_diffs": eval_diffs,
         "missing": sorted(set(gt_rows) - set(ours)), "extra": sorted(set(ours) - set(gt_rows)),
         "fields_checked": checked, "field_diffs": diffs, "formula_diffs": formula_diffs, "totals": totals,
     }

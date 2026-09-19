@@ -1,6 +1,7 @@
 """Handbook unit weights (kg/m) for hot-rolled Indian sections, used by the BOQ's calculated weight.
 
-Source: "ISA / ISMC / ISMB hot-rolled steel sections, weight per metre (as per IS 808)", Amardeep Steel,
+Source: "ISA / ISMC / ISMB hot-rolled steel sections, weight per metre", Amardeep Steel (headers: angles
+IS 808:1976, beams IS 800:1964; channel values are the IS 808:1989 figures),
 https://www.amardeepsteel.com/weight-per-metre-structurals-1.pdf (transcribed 2026-09-19). ISMC values agree
 with the IS 808:1989 channel chart at metalweightpro.com for ISMC 150 (16.8) and ISMC 300 (36.3); the user's
 2GU1 BOQ uses the same values (ISMC150 16.8, ISA75X75X8 8.9). Edit here to follow a different edition."""
@@ -19,7 +20,8 @@ _ISA_EQUAL = {
     80: {6: 7.3, 8: 9.6, 10: 11.8, 12: 14.0}, 90: {6: 8.2, 8: 10.8, 10: 13.4, 12: 15.8},
     100: {6: 9.2, 6.5: 9.99, 8: 12.1, 10: 14.9, 12: 17.7, 15: 21.9}, 110: {8: 13.4, 10: 16.6, 12: 19.7, 16: 25.7},
     120: {8: 14.7, 10: 18.2, 12: 21.6, 15: 26.6}, 130: {8: 15.9, 10: 19.7, 12: 23.5, 16: 30.7},
-    150: {10: 22.9, 12: 27.3, 15: 33.0, 16: 35.8, 18: 40.1, 20: 44.1}, 180: {15: 40.9, 18: 48.6, 20: 53.7},
+    # 150x150x15: the source cell is truncated to "33."; IS 808 gives 33.8
+    150: {10: 22.9, 12: 27.3, 15: 33.8, 16: 35.8, 18: 40.1, 20: 44.1}, 180: {15: 40.9, 18: 48.6, 20: 53.7},
     200: {12: 36.9, 16: 48.5, 20: 60.0, 24: 71.1, 25: 73.9},
 }
 # unequal angles ISA a x b x t

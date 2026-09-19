@@ -32,6 +32,7 @@ def test_handbook_unit_weights():
     assert handbook_unit_weight("ROD8")[0] == pytest.approx(0.395, abs=1e-3)          # computed, not tabulated
     assert handbook_unit_weight("PIPE508*6")[0] == pytest.approx(74.28, abs=0.01)
     assert handbook_unit_weight("SPD508*508*608*608*8") == (None, "")
+    assert handbook_unit_weight("ISA150X150X15")[0] == 33.8                  # source cell truncated to '33.'
     assert plate_unit_weight(6) == pytest.approx(47.1)
 
 
@@ -73,20 +74,31 @@ def test_boq_drawing_weight_reconciles_on_every_sheet(drg, settings):
     assert sum(r.total_drg_wt for r in inv.boq) == pytest.approx(GOLDEN[drg]["gross"], abs=0.1)
 
 
-def test_section_without_handbook_value_uses_drawing_weight_and_is_flagged(settings):
+def test_rolled_section_without_handbook_value_uses_drawing_weight_and_is_flagged(settings):
     x = det("16362", settings)
-    assert missing_unit_weights(x) == {"SPD508*508*608*608*8": pytest.approx(54.93 / 0.506, abs=1e-3)}
+    assert missing_unit_weights(x) == {}                                  # every rolled section is tabulated
+    next(p for p in x.bom.parts if p.item_no == "1m471").section = "ISMC160"
+    assert missing_unit_weights(x) == {"ISMC160": pytest.approx(13.16 / 0.8, abs=1e-3)}
     inv = deterministic_inventory(x)
-    spd = next(r for r in inv.boq if r.item_no == "1m470")
-    assert spd.unit_wt_source.startswith("drawing") and "verify" in spd.note
-    assert "1m470" in next(c for c in inv.checks if c.id == "boq.calculated").message
+    row = next(r for r in inv.boq if r.item_no == "1m471")
+    assert row.unit_wt_source.startswith("drawing") and "verify" in row.note
+    assert row.difference is None                                          # drawing vs itself is not a check
+    assert "1m471" in next(c for c in inv.checks if c.id == "boq.calculated").message
+
+
+def test_spd_cone_is_a_plate_row_in_the_boq(settings):
+    rows = {r.item_no: r for r in build_boq(det("16362", settings))}
+    cone = rows["1m470 cone plate"]
+    assert (cone.section, cone.width, cone.length, cone.qty, cone.fab_qty) == ("PL8", 1727.9, 508.5, 1, 2)
+    assert cone.total_drg_wt == pytest.approx(2 * 54.93) and abs(cone.difference) < 0.6       # +0.44 %
+    assert "1m470" not in rows
 
 
 def test_boq_excel_has_reference_layout_and_live_formulas(settings):
     inv = deterministic_inventory(det("16807", settings))
     ws = openpyxl.load_workbook(io.BytesIO(export.boq_excel(inv))).active
     assert [c.value for c in ws[2]][:17] == export.BOQ_HEADERS[:17]
-    assert ws["J1"].value == "=SUBTOTAL(9,J3:J10)" and ws["P1"].value == "=SUBTOTAL(9,P3:P10)"
+    assert ws["J1"].value == "=SUBTOTAL(9,J3:J105848)" and ws["P1"].value == "=SUBTOTAL(9,P3:P105848)"
     assert (ws["J3"].value, ws["K3"].value, ws["L3"].value) == ("=H3*I3", "=7.85*6", "=(F3/1000)*(G3/1000)*H3*K3")
     assert (ws["K4"].value, ws["L4"].value, ws["P4"].value) == (16.8, "=(G4/1000)*H4*K4", "=M4-O4")
 
@@ -100,5 +112,20 @@ def test_benchmark_against_reference_workbook(settings):
     assert (res["our_rows"], res["gt_rows"], res["missing"], res["extra"]) == (8, 8, [], [])
     # the only difference is the reference's own typo: grade 'E2350A' for 2GU1 (the drawing's BOM says E350A)
     assert res["field_diffs"] == [{"item": "2GU1", "field": "grade", "ours": "E350A", "gt": "E2350A"}]
-    assert res["formula_diffs"] == []
+    assert res["formula_diffs"] == [] and res["evaluated_diffs"] == []      # the exported sheet computes the same
     assert all(v["match"] for v in res["totals"].values())
+
+
+@pytest.mark.parametrize("drg", sorted(GOLDEN))
+def test_exported_workbook_evaluates_to_the_model_values(drg, settings):
+    from drawing_qa.benchmark import evaluated_rows
+    inv = deterministic_inventory(det(drg, settings))
+    ev = evaluated_rows(inv)
+    for r in inv.boq:
+        e = ev[r.item_no]
+        assert e["J"] == r.total_qty, r.item_no
+        for col, v in (("L", r.calc_wt), ("M", r.total_calc_wt), ("O", r.total_drg_wt), ("P", r.difference)):
+            assert (e[col] is None) if v is None else e[col] == pytest.approx(v, abs=1e-3), (r.item_no, col)
+    sub = ev["__subtotals__"]
+    assert sub["M"] == pytest.approx(sum(r.total_calc_wt or 0 for r in inv.boq), abs=1e-3)
+    assert sub["O"] == pytest.approx(GOLDEN[drg]["gross"], abs=0.1)

@@ -6,12 +6,15 @@
 Plates: SECTION 'PL<t>' + WIDTH, UNIT WT = 7.85 x t (kg/m²), CALCULATED WT = W x L x QTY x UNIT WT.
 Rolled sections: UNIT WT from the IS 808 handbook table (kg/m), CALCULATED WT = L x QTY x UNIT WT.
 WT is the drawing's (Tekla) gross weight of the row, so DIFFERENCE shows handbook vs drawing.
-Welded built-ups (WH / T) are listed as their plates; an unknown section is listed as plates when an accepted
-breakdown exists, otherwise as itself with a unit weight from OpenAI (checked) or from the drawing."""
+Welded built-ups (WH / T) and rolled cones (SPD, developed on the mean diameters) are listed as their plates.
+A rolled designation missing from the handbook table gets an OpenAI handbook value (always flagged 'verify')
+or, failing that, the drawing's own kg/m. An unknown section is listed as plates when an accepted breakdown
+exists, otherwise as itself with the drawing's kg/m. When the unit weight comes from the drawing, DIFFERENCE is
+left blank: a 0.00 would only compare the drawing with itself."""
 import re
 
 from .models import BoqRow
-from .sections import decompose, parse_section
+from .sections import decompose, develop_cone, parse_section
 from .steel_tables import handbook_unit_weight, plate_unit_weight
 
 ITEM_TYPE = re.compile(r"DETAIL\s+OF\s+(.+?)\s+MKD\s+AS", re.I)
@@ -64,6 +67,9 @@ def build_boq(x, unit_weights=None, breakdowns=None) -> list[BoqRow]:
             plates = [(f"{p.item_no} {'flange' if i == 0 else 'web'}", pl) for i, pl in
                       enumerate(decompose(ps, p.length_mm or 0))]
             note = f"{p.section} decomposed into plates"
+        elif ps.family == "cone":
+            plates = [(f"{p.item_no} cone plate", develop_cone(ps, p.length_mm or 0))]
+            note = f"{p.section}: rolled cone, developed plate (mean circumference x slant height)"
         elif p.item_no in breakdowns:
             plates = [(f"{p.item_no} plate {i + 1}", pl) for i, pl in enumerate(breakdowns[p.item_no])]
             note = f"{p.section}: OpenAI plate breakdown (weight and thickness checked)"
@@ -84,22 +90,33 @@ def build_boq(x, unit_weights=None, breakdowns=None) -> list[BoqRow]:
             if uw is None and ps.profile in unit_weights:
                 uw, src = unit_weights[ps.profile]
             note = ""
+            drawing_uw = tekla_unit_weight(p)
+            if src.startswith("OpenAI") and drawing_uw:
+                note = f"handbook value from OpenAI, unverified; drawing implies {drawing_uw:.2f} kg/m"
             if uw is None:
-                uw, src = tekla_unit_weight(p), "drawing (no handbook value)"
-                note = "unit weight taken from the drawing's own weight; verify"
-            rows.append(_row(x, itype, p, fab, section=ps.profile, length=p.length_mm,
-                             unit_wt=round(uw, 4) if uw else None, unit_wt_basis="kg/m", drg_wt=p.gross_kg,
-                             unit_wt_source=src, note=note))
+                uw, src = drawing_uw, "drawing (no handbook value)"
+                note = "unit weight taken from the drawing's own weight; verify" + (
+                    "; procure per the drawing" if ps.family == "unknown" else "")
+            if ps.family == "pipe":
+                note = "BOM length is the longest length; DIFFERENCE includes mitre / hole cut-off"
+            r = _row(x, itype, p, fab, section=ps.profile, length=p.length_mm,
+                     unit_wt=round(uw, 4) if uw else None, unit_wt_basis="kg/m", drg_wt=p.gross_kg,
+                     unit_wt_source=src, note=note)
+            if src.startswith("drawing"):
+                r.difference = None                     # drawing vs itself is not a check
+            rows.append(r)
     return rows
 
 
+ROLLED = re.compile(r"^IS[A-Z]{1,3}\d")              # ISA / ISMC / ISMB / ISLB / ISHB / ISJC ... designations
+
+
 def missing_unit_weights(x) -> dict[str, float]:
-    """Rolled / unknown sections with no handbook value: {section: drawing-implied kg/m} (the plausibility reference)."""
+    """Rolled IS designations with no handbook-table value: {section: drawing-implied kg/m (shown beside the
+    OpenAI value, never used to accept it)}. Unknown families (e.g. transitions) are not asked about."""
     out = {}
     for p in (x.bom.parts if x.bom else []):
         ps = parse_section(p.section)
-        if ps.family in ("plate", "built_up"):
-            continue
-        if handbook_unit_weight(p.section)[0] is None and tekla_unit_weight(p):
+        if ROLLED.match(ps.profile) and handbook_unit_weight(p.section)[0] is None:
             out[ps.profile] = tekla_unit_weight(p)
     return out

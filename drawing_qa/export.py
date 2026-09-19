@@ -70,9 +70,8 @@ BOQ_HEADERS = ["DRAWING NO", "ITEM TYPE", "MARK NO", "ITEMNO", "SECTION", "WIDTH
 
 def write_boq_sheet(ws, rows):
     """BOQ with live formulas in the reference layout: row 1 SUBTOTALs, row 2 headers, data from row 3."""
-    last = max(3, len(rows) + 2)
-    for col in "JLMNOP":
-        ws[f"{col}1"] = f"=SUBTOTAL(9,{col}3:{col}{last})"
+    for col in "JLMNOP":                                  # open range, as in the reference: added rows count
+        ws[f"{col}1"] = f"=SUBTOTAL(9,{col}3:{col}105848)"
     ws.append(BOQ_HEADERS)
     for i, r in enumerate(rows, start=3):
         plate = r.unit_wt_basis == "kg/m2"
@@ -85,7 +84,7 @@ def write_boq_sheet(ws, rows):
             if r.unit_wt is not None else None,
             f"=L{i}*I{i}" if r.unit_wt is not None else None,
             None if r.drg_wt is None else round(r.drg_wt, 4), f"=N{i}*I{i}",
-            f"=M{i}-O{i}" if r.unit_wt is not None else None,
+            f"=M{i}-O{i}" if r.difference is not None else None,
             r.grade, r.unit_wt_source, r.note,
         ])
 
