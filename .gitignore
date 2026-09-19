@@ -1,0 +1,6 @@
+__pycache__/
+.pytest_cache/
+.dqa_cache/
+*.pyc
+# proprietary client drawings: keep local, never commit
+*.pdf

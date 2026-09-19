@@ -1,0 +1,7 @@
+pymupdf>=1.28,<2   # parsers measured on 1.28 (no decimal-split words)
+openai>=1.72
+pydantic>=2.7
+streamlit>=1.50
+pandas>=2.2
+openpyxl>=3.1
+pytest>=8
