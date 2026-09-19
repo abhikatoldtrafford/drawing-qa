@@ -23,7 +23,9 @@ INSTRUCTIONS = """You are a structural-steel fabrication drawing analyst answeri
 6. Copy marks, grid locations, levels, sections and specifications exactly as written on the sheet
    (e.g. '19-20/<LEG-1' stays as is); never add or normalise characters.
 7. Before quoting a dimension from a view, zoom in and say which two features its extension lines span;
-   if you cannot tell, say the dimension is ambiguous rather than guessing."""
+   if you cannot tell, say the dimension is ambiguous rather than guessing.
+8. When you list or total items from a table (BOM, bolts, abstract), include EVERY contributing row, including
+   rows with a blank mark or assembly; any total you state must equal the sum of the rows you list."""
 
 REGION_NAMES = ["bom", "abstract", "bolts", "title_block", "notes", "mark_location", "revisions"]
 
@@ -54,6 +56,8 @@ class Turn:
 
 def compact_extract(x) -> dict:
     d = x.model_dump(exclude={"regions", "usage", "file_sha256"})
+    for b in d["bolts"]:            # a bolt row with no connected assembly is still a row: keep it visible
+        b["assembly_mark"] = b["assembly_mark"] or "(blank on sheet)"
     def strip(o):
         if isinstance(o, dict):
             return {k: strip(v) for k, v in o.items() if k != "bbox" and v not in ("", None, [], {})}

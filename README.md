@@ -1,57 +1,480 @@
 # Drawing Q&A
 
-Streamlit app for Tekla structural-steel fabrication drawings (vector PDF, TATA STEEL template). Upload a sheet to:
-- get a validated extract (title block, BOM, abstract, bolts, revisions, notes, erection locations, view labels);
-- build a material inventory;
-- ask questions about the drawing;
-- export everything to Excel, CSV or JSON.
+Material inventory and visual Q&A for Tekla structural-steel fabrication drawings (vector PDFs on the TATA STEEL
+sheet template). Upload a drawing to a Streamlit app, pick a page, and get:
 
-- **Extract: PyMuPDF only.** No model calls. Checks guard every number: qty × piece weight = gross, Σ gross × assembly
-  qty = grand total, abstract = BOM by section, a second independent BOM parse, and every BOM mark appears on the drawing.
-- **Q&A: OpenAI** (`gpt-5.4-mini`; deep mode `gpt-5.5`). The model sees the whole sheet on every call: the full text
-  layer tagged with grid cells, high-resolution tiles, and the validated extract. It can zoom and search, and it cites
-  marks, grid cells and BOM rows.
-- **Inventory:** plates by thickness and grade (welded WH/T members decomposed into plates), sections by profile,
-  fasteners from the bolt list, and paint area. All of these are deterministic and reconcile to the BOM weight.
-  OpenAI reads the welds from the views and interprets unknown sections. Guardrails reject:
-  - weld sizes that are not on the sheet;
-  - welds citing unknown parts;
-  - impossible weld lengths;
-  - joint counts over budget;
-  - plate breakdowns whose weight doesn't match the BOM.
+- **a validated extract**: title block, bill of materials (BOM), abstract, bolt list, revisions, notes, erection
+  locations, part marks and view labels. PyMuPDF reads it with no model calls, and arithmetic checks confirm it;
+- **a fabrication BOQ** in the layout of the estimator's reference workbook (`2GU1 BOQ.xlsx`). It downloads as
+  Excel with live formulas;
+- **a material inventory**: plates by thickness and grade, rolled sections, fasteners, paint area, and an OpenAI
+  weld estimate;
+- **chat about the drawing**, with conversation context. The OpenAI model reads the sheet images *and* the
+  PyMuPDF text layer, and can zoom and search;
+- **exports**: Excel (all sheets), BOM CSV and JSON.
 
-  Weld metal and electrode figures are estimates.
+The design rule: **PyMuPDF reads and checks; OpenAI adds only what text parsing can't.** Every number the model
+touches (weld lengths, section breakdowns, unit weights) is either computed by code from the BOM or checked
+against it. Anything that cannot be verified is labelled unverified.
 
-- **Fabrication BOQ (Inventory tab, primary output):** one row per BOM part in the layout of the reference BOQ
-  (`2GU1 BOQ.xlsx`). The columns are drawing no, item type, mark, item, section, width, length, qty, fab qty,
-  total qty, unit weight, calculated weight, drawing weight, difference and grade.
-  - Plates use 7.85 × t kg/m². Rolled sections use IS 808 handbook kg/m (`drawing_qa/steel_tables.py`, source cited).
-  - Welded WH/T members are listed as their plates.
-  - Rolled cones (SPD) are developed into plates.
-  - For rolled designations missing from the table, OpenAI supplies a handbook unit weight. It is always shown as
-    unverified, beside the drawing's value.
-  - OpenAI breaks down any other unknown section, and the breakdown is weight- and thickness-checked.
-  - Download the BOQ as Excel with live formulas and SUBTOTALs.
+---
 
-  Benchmark against a reference workbook:
+## Contents
 
-      python scripts/benchmark_boq.py <drawing.pdf> <reference.xlsx> [--openai]
+1. [Quick start](#quick-start)
+2. [The sample drawings](#the-sample-drawings)
+3. [How it works](#how-it-works)
+4. [Extraction (PyMuPDF)](#extraction-pymupdf)
+5. [Guardrail checks](#guardrail-checks)
+6. [OpenAI: page context, chat and inventory](#openai-page-context-chat-and-inventory)
+7. [Fabrication BOQ](#fabrication-boq)
+8. [Inventory](#inventory)
+9. [Streamlit app](#streamlit-app)
+10. [Batch run and the results folder](#batch-run-and-the-results-folder)
+11. [Results on the sample drawings](#results-on-the-sample-drawings)
+12. [Benchmark against the reference BOQ](#benchmark-against-the-reference-boq)
+13. [Configuration](#configuration)
+14. [Tests](#tests)
+15. [Code map](#code-map)
+16. [Known limitations](#known-limitations)
+17. [Data handling](#data-handling)
 
-  On 16807 against `2GU1 BOQ.xlsx`:
-  - 8/8 rows and 135/136 fields identical; the only difference is the reference's own grade typo (`E2350A`,
-    where the BOM says `E350A`);
-  - 0 formula differences, and the evaluated exported workbook matches cell by cell;
-  - all SUBTOTALs equal.
+---
 
-## Run
+## Quick start
 
-    pip install -r requirements.txt
-    $env:OPENAI_API_KEY="..."        # bash: export OPENAI_API_KEY=...
-    streamlit run app.py
+```powershell
+pip install -r requirements.txt
+$env:OPENAI_API_KEY = "..."          # bash: export OPENAI_API_KEY=...
+streamlit run app.py                 # the app
+python -m pytest                     # offline tests (155)
+python scripts/run_all.py            # every PDF in the repo root -> results/
+python scripts/benchmark_boq.py "TST-SFD-46-01-01-07-000-16807_20260813154646827.pdf" "2GU1 BOQ.xlsx"
+```
 
-Environment: `DQA_MODEL` (default gpt-5.4-mini), `DQA_DEEP_MODEL` (default gpt-5.5), `DQA_CACHE_DIR` (default .dqa_cache).
+Python 3.10+ is required (developed on 3.13). Without `OPENAI_API_KEY`, the app still gives you:
+- the extract and the checks;
+- the deterministic inventory and BOQ;
+- the exports.
 
-## Test
+The chat and the OpenAI inventory step need the key.
 
-    python -m pytest                                  # offline; sample PDFs in the repo root (or DQA_SAMPLES)
-    python scripts/live_smoke.py <pdf> "question"     # real API, costs tokens
+## The sample drawings
+
+The repo root holds six client PDFs; the sixth is a byte-identical copy of 16807. Each is a single page.
+
+| Drawing | Item | Assembly | Sheet | BOM rows | What makes it interesting |
+|---|---|---|---|---|---|
+| 09970 | Down comer | 4DC3 × 1 | A1 | 11 | Mitred pipes (BOM lengths are before cut-off); taper washers without a quantity |
+| 14278 | Column | 3C1 × 1 | A0 | 43 | Heavy built-up column, 33.5 t; welded WH/T members decomposed into plates |
+| 14281 | Column | 3C2 × 1 | A0 | 71 | Largest BOM; built-ups; the Tekla net total differs from the sum of the parts |
+| 16362 | Down comer | 1DC1 × 2 | A1 | 7 | Rolled cone `SPD508*508*608*608*8`; fabrication quantity 2; rods |
+| 16807 | Gutter | 2GU1 × 1 | A0 | 8 | Has the reference BOQ `2GU1 BOQ.xlsx` (ground truth for the BOQ) |
+
+## How it works
+
+```
+ PDF page
+   │
+   ├─► PageLayout (PyMuPDF: words, lines, drawing segments, sheet grid from border labels)
+   │        │
+   │        ├─► parsers ──► PageExtract (title block, BOM, abstract, bolts, revisions, notes,
+   │        │                            mark locations, part marks, view labels, regions)
+   │        │                    │
+   │        │                    └─► validate.run_checks ──► pass / warn / fail checks
+   │        │
+   │        └─► context.page_context: grid-tagged text layer + hi-res tiles of the whole sheet
+   │                          │  (identical prefix on every call → OpenAI prompt cache)
+   │                          ▼
+   ├─► deterministic_inventory ──► plates, sections, fasteners, paint, BOQ rows (IS 808 / 7.85 × t)
+   │        │
+   │        └─► OpenAI inventory step (one structured call; escalation to the deep model if needed)
+   │               ├─ welds: topology only → code computes lengths from BOM geometry, guardrails filter
+   │               ├─ unknown sections: plate breakdown → accepted only if thickness and weight match
+   │               └─ missing rolled unit weights → used, but always flagged "unverified"
+   │
+   ├─► ChatSession (page context + extract + inventory; tools: query_bom, search_text, zoom)
+   │
+   └─► exports: BOQ .xlsx (live formulas), full workbook, BOM CSV, JSON
+```
+
+## Extraction (PyMuPDF)
+
+Everything below is deterministic and needs no API key. The results are cached on disk under
+`.dqa_cache/`, keyed by the file's SHA-256, the page number and `SCHEMA_VERSION`.
+
+| Element | How it is read (`drawing_qa/parsers/…`) |
+|---|---|
+| **Sheet grid** | The border's column numbers and row letters give each text item a grid cell such as `E7`. The letters are found by alignment because they are inset from the border (`geometry.GridMap`). |
+| **BOM** | The table frame is located from the `BILL OF MATERIALS` title; it must span the title and lie on the page. Columns are mapped from the header words (MARK, SECTION, LENGTH, QTY, …), and rows are grouped by y. The first row is the assembly; the rest are parts. Totals come from the footer. Fragments that touch are joined without inserting characters (`geometry.join_tokens`). |
+| **BOM cross-check** | A second, independent parse with `page.find_tables()`, clipped to the same frame, is compared field by field with the first. |
+| **Abstract** | The `ABSTRACT` table (SR. / description / WT.), bounded by its header. |
+| **Bolts** | The `List of Permanent Bolts` table: bolt, nut, plain washer and taper washer columns per assembly. |
+| **Title block** | Fully deterministic. Labelled cells are found from the drawn cell borders (`label_cells`). This gives the drawing no., rev, sheet, size, weight, department, equipment/area, project, title lines, and the drawn/checked/approved names and dates. |
+| **Revisions, notes, mark locations** | Row-grouped tables. Mark locations give one row per erected instance: mark, grid location and level. |
+| **Part marks, view labels** | Marks placed on the drawing views (outside the tables), plus section/detail labels (`A - A`, `MARK. NO:- 4p637`) with their scale and grid cell. |
+
+The parsers were measured against PyMuPDF 1.28 (`requirements.txt` pins `>=1.28,<2`).
+
+## Guardrail checks
+
+`drawing_qa/validate.py` checks the extract. The inventory adds its own checks. **fail** means the numbers on
+the sheet disagree with what was extracted. **warn** means a person should look; it is not proof of an error.
+
+| Check | What it verifies |
+|---|---|
+| `text_layer` | The page has a usable text layer (scanned sheets fail here) |
+| `bom.found`, `bom.assembly_row` | The BOM exists and has an assembly row |
+| `bom.row_arith` | Every part row: qty × piece weight = gross (± rounding of the piece weight) |
+| `bom.gross_total` | Σ part gross × assembly qty = BOM gross total |
+| `bom.net_total` | The same for net weight. Informational: Tekla net totals often differ |
+| `bom.crosscheck` | The `find_tables` parse agrees with the header-mapped parse |
+| `abstract.by_section`, `abstract.total` | The abstract equals the BOM grouped by section; the abstract total equals the BOM total |
+| `title.drawing_no`, `title.fields`, `title.weight` | The drawing no. matches the numbers elsewhere on the sheet; the required fields are present; the title-block weight equals the BOM total |
+| `marks.bom_on_sheet`, `marks.extra` | Every BOM mark appears on a view; marks on the views that are not in the BOM |
+| `mark_location.assembly`, `mark_location.count` | The erection-location table names the BOM assembly, and the number of rows matches the assembly qty |
+| `bolt`, `nut` | Bolt-list rows are complete |
+| `inventory.weight`, `inventory.bom` | The inventory's plates and sections add up to the BOM weight |
+| `inventory.paint` | Paint area comes from the BOM surface area |
+| `inventory.taper_qty` | Taper washers listed without a quantity (they are not counted) |
+| `inventory.unclassified` | BOM sections the code could not classify |
+| `inventory.welds`, `inventory.weld_estimate` | Weld guardrail results; the weld figures are labelled an estimate |
+| `inventory.llm` | The OpenAI step failed, so the inventory is deterministic only |
+| `boq.drawing_weight` | The BOQ drawing weights add up to the BOM total |
+| `boq.calculated` | Calculated vs drawing weight; lists any rows that differ by more than 5% |
+| `boq.unit_weights` | Unit weights supplied by OpenAI (always a warning, shown beside the drawing's value) |
+
+## OpenAI: page context, chat and inventory
+
+**Models:**
+- `gpt-5.4-mini` by default;
+- `gpt-5.5` for deep mode (a toggle in the app) and for automatic escalation of the inventory step.
+
+The calls use the Responses API with strict Pydantic schemas (`responses.parse`) or function tools.
+
+**Page context (`context.py`).** Every request starts with the same prefix, built once per page:
+- the full PyMuPDF text layer, one line per text line, tagged with its grid cell (`[E7] 4p637`; rotated dimension
+  text is marked `(vertical)`);
+- high-resolution tiles of the whole sheet: 3 × 2 on A0 sheets, 2 × 2 on A1.
+
+Because the prefix is identical on every call, OpenAI's prompt cache serves most of it. The prefix is about 17k
+tokens on A1 and 36k on A0, and 94–98% of it was cached on repeat calls. The model therefore always sees the whole
+sheet, not a crop.
+
+**Chat (`chat.py`).** `ChatSession` adds the validated extract (and the inventory, once built) to the page
+context. The model has three tools:
+
+| Tool | Returns |
+|---|---|
+| `query_bom(contains)` | BOM rows whose mark, section or grade contains the text |
+| `search_text(query)` | Hits on the sheet, each with its grid cell |
+| `zoom(target)` | A high-resolution crop, returned as an image. The target can be a grid cell (`E7`), a range (`E7:G9`), a region (`bom`, `abstract`, `bolts`, `title_block`, `notes`, `mark_location`, `revisions`) or a view label (`B - B`, `4p637`) |
+
+The instructions tell the model to:
+- treat the extract's numbers as authoritative;
+- cite marks, BOM rows, grid cells and view labels;
+- copy text exactly as written;
+- zoom before quoting a dimension;
+- say plainly when the sheet doesn't contain the answer.
+- when listing or totalling from a table, include every contributing row, including rows with a blank mark,
+  and make stated totals equal the sum of the rows listed.
+
+The session keeps the last 8 turns. Images are removed from the history so it doesn't grow, and each turn allows
+at most 6 tool rounds.
+
+**Inventory step (`inventory.py`).** It makes one structured call with the page context and the BOM, but *without
+the BOM weights*, so the model cannot echo them back. The model returns three things:
+1. **welds**: joint topology only. For each joint it gives the attached part, the base part, the welded edge
+   (length / width / perimeter / circumference), the number of sides, the fillet size, the joint count, whether
+   it is a tack weld, and the evidence it read (view label or grid cell). **Code computes the lengths** from the
+   BOM geometry. A weld is rejected when:
+   - its size is not a TYP./CONT. callout or note size on the sheet;
+   - it cites a part not in the BOM;
+   - its length is geometrically impossible;
+   - it exceeds the joint budget for its (attached part, base part, edge).
+2. **unknown sections**: a plate breakdown for sections the code cannot parse. A breakdown is accepted only if
+   every plate's thickness appears in the section name and the total weight is within ±2% of the BOM.
+3. **unit weights** for standard rolled sections that are missing from the IS 808 table. They are always
+   labelled "OpenAI handbook value (unverified)".
+
+The step escalates once to the deep model when:
+- the mini call fails;
+- an unknown section remains unresolved;
+- or more than 30% of more than 2 proposed welds are rejected.
+
+After escalation, each part is taken from the better run: sections from the run that resolved more, and welds from
+the run with the lower rejection rate. Successful runs are cached.
+
+## Fabrication BOQ
+
+The primary non-chat output. It has one row per BOM part and the same layout, column spelling and formulas as the
+reference `2GU1 BOQ.xlsx`:
+
+| Col | Header | Content |
+|---|---|---|
+| A–E | DRAWING NO, ITEM TYPE, MARK NO, ITEMNO, SECTION | Item type from "DETAIL OF *GUTTER* MKD AS"; plates shown as `PL<t>` |
+| F, G | WIDTH, LENGTH | mm (width for plates only) |
+| H, I, J | QTY, FAB QTY, TOTAL QTY | `J = H*I`; FAB QTY is the assembly qty |
+| K | UNIT WT | plates `=7.85*t` (kg/m²); rolled sections kg/m |
+| L | CALCULATED WT | plates `=(F/1000)*(G/1000)*H*K`, others `=(G/1000)*H*K` |
+| M | TOTAL CALCULATED WT | `=L*I` |
+| N, O | WT, TOTAL DRG WT | Tekla gross weight of the row; `O = N*I` |
+| P | DIFFRENCE | `=M-O` |
+| Q | GRADE | |
+| R, S | UNIT WT SOURCE, NOTE | extra columns: where K came from, and remarks |
+
+Row 1 holds `=SUBTOTAL(9, X3:X105848)` for J, L, M, N, O and P over an open range, so rows added by hand are
+included. Row 2 holds the headers.
+
+**Unit weights (`steel_tables.py`):**
+
+| Profile | Rule |
+|---|---|
+| Plate `PL`/`PLT` | 7.85 × t kg/m² |
+| ISA (equal and unequal), ISMC, ISMB, round bars | IS 808 handbook table, transcribed from the Amardeep Steel weight chart and spot-checked against other published charts. ISA 150×150×15 is corrected to 33.8, because the source cell is truncated. |
+| Pipe `PIPE od*t` | π (OD − t) t × 7850, computed |
+| Rod `ROD d` | from the table, or π d²/4 × 7850 |
+| Welded `WH`/`T` built-ups | split into flange and web plate rows (`3m471 flange`, `3m471 web`) |
+| Rolled cone `SPD d1*d1*d2*d2*t` | developed flat on the mean diameters: width = π(r1 + r2), length = slant height. It becomes one `PL<t>` row (`1m470 cone plate`). |
+| Other rolled designations missing from the table | OpenAI handbook value, flagged unverified |
+| Anything else | OpenAI plate breakdown (checked on thickness and weight), or the drawing's own weight, with no difference computed |
+
+No wastage is added. When one BOM part becomes several plates (a built-up), its drawing weight is shared among
+them by plate weight.
+
+## Inventory
+
+`deterministic_inventory` (no API) produces:
+- **plates** by thickness and grade: pieces, area and weight. Built-ups and cones are decomposed; each line lists
+  its source marks;
+- **sections** by profile and grade: pieces, total length and weight;
+- **fasteners** from the bolt list: bolts, nuts, plain and taper washers by diameter, length, grade and
+  specification, with the assemblies they connect;
+- **paint area** from the BOM surface area;
+- **total steel** = Σ BOM gross × assembly qty, reconciled against the plates plus the sections.
+
+The OpenAI step adds welds (size, edge, sides, count, total length, weld-metal kg, evidence) and the electrode
+estimate. These are always labelled **model-read estimate, unverified**, and they are kept out of the BOQ.
+
+## Streamlit app
+
+`streamlit run app.py`. Sidebar: upload a PDF, pick a page, and use two toggles: **Use OpenAI** (on when the key is
+set) and **Deep mode** (`gpt-5.5` for everything). The sidebar also shows the check counts and the session's token
+usage.
+
+| Tab | Shows |
+|---|---|
+| Drawing | The sheet, plus a zoom box for a grid cell or range (`E7`, `E7:G9`) |
+| Extract | Title block, BOM, abstract, bolts, revisions, notes, locations and view labels as tables |
+| Checks | Every guardrail check, grouped by level |
+| Inventory | BOQ first, with a **BOQ (Excel, live formulas)** download; plates, sections, fasteners, items for review; welds (model-read estimate, unverified). The **Run OpenAI step (welds, unknown sections)** button runs the OpenAI step. |
+| Chat | Q&A with conversation context. Each answer shows the tools used and the zoomed crops the model looked at; **New conversation** resets the context. |
+| Export | Full Excel workbook (BOQ sheet first), BOM CSV, extract JSON, inventory JSON |
+
+## Batch run and the results folder
+
+```powershell
+python scripts/run_all.py [pdf_dir] [out_dir] [--offline] [--no-qa]     # defaults: .  results
+```
+
+The script runs the full pipeline on every PDF in `pdf_dir`. Byte-identical files are detected by SHA-256 and
+skipped. For each drawing and page it writes `results/<drawing no>/`:
+
+| File | Content |
+|---|---|
+| `report.md` | Readable summary: title block, checks, BOM, BOQ, inventory, welds, OpenAI usage |
+| `qa.md` | Answers to four standard questions, asked in one conversation (overview and erection locations; heaviest part; plate thicknesses; fasteners) |
+| `boq.xlsx` | The BOQ with live formulas, in the reference layout |
+| `workbook.xlsx` | Everything: BOQ, extract sheets, inventory sheets |
+| `extract.json`, `inventory.json`, `bom.csv` | Machine-readable outputs |
+| `sheet.png` | Overview render of the sheet |
+
+It also writes:
+- `results/README.md`, an index of all drawings;
+- `index.json`;
+- `usage.json`, the tokens used per model;
+- `benchmark_<drawing>.md/.json` wherever a reference BOQ matches a drawing (`2GU1 BOQ.xlsx` → 16807).
+
+`--offline` skips OpenAI: the output is PyMuPDF extraction and the deterministic inventory and BOQ only.
+
+## Results on the sample drawings
+
+Full run on 2026-09-19 (`python scripts/run_all.py`, gpt-5.4-mini with escalation to gpt-5.5). The per-drawing
+outputs are in `results/`; start with `results/README.md`.
+
+| Drawing | Item | Assembly | BOM rows | BOM gross kg | BOQ rows | BOQ calculated kg | BOQ drawing kg | Welds accepted (rejected) | Checks pass / warn / fail |
+|---|---|---|---|---|---|---|---|---|---|
+| 09970 | Down comer | 4DC3 × 1 | 11 | 432.62 | 11 | 473.49 | 432.62 | 9 (0) | 18 / 3 / 0 |
+| 14278 | Column | 3C1 × 1 | 43 | 33,496.76 | 48 | 33,497.51 | 33,496.76 | 18 (0) | 18 / 1 / 0 |
+| 14281 | Column | 3C2 × 1 | 71 | 26,121.53 | 77 | 26,122.18 | 26,121.52 | 45 (0) | 18 / 2 / 0 |
+| 16362 | Down comer | 1DC1 × 2 | 7 | 350.52 | 7 | 352.84 | 350.54 | 4 (1) | 16 / 3 / 0 |
+| 16807 | Gutter | 2GU1 × 1 | 8 | 976.84 | 8 | 979.60 | 976.84 | 6 (0) | 17 / 2 / 0 |
+
+**Every drawing:**
+- **Zero failed checks.** Row arithmetic, BOM totals, the abstract, the title-block weight, the second BOM parse and
+  the marks on the sheet all agree.
+- **The BOQ's drawing weights add up to the BOM gross total.** The 0.01–0.02 kg gaps come from Tekla rounding the
+  piece weights.
+- **Plates + sections = BOM gross** in the inventory.
+
+What the warnings are:
+
+| Drawing | Warning | Why |
+|---|---|---|
+| 09970 | `boq.calculated` +40.87 kg | The three PIPE508*6 rows use the BOM length before the mitre cut-offs (+7–15%). This is expected; the rows are flagged. |
+| 09970 | `inventory.taper_qty` | The bolt list names taper washers for 4PSB2/5/6 but prints no quantity, so none are counted |
+| 14281, 16807 | `bom.net_total` | Tekla's net total differs from the sum of the part net weights. Informational only; gross totals match. |
+| 16362 | `boq.calculated` +2.30 kg | The ROD8 cage is +1.07 kg against the drawing (computed π d²/4 vs Tekla's rounded piece weight) |
+| 16362 | `inventory.welds`, 1 rejected | The model proposed a circumferential weld on the cone 1m470 to plate 1p374. The guardrail rejects it because that edge does not fit the cone's geometry. |
+| all | `inventory.weld_estimate` | Weld metal is 0.01–1.0% of steel against a typical 1–2%. It is always flagged as a model-read estimate. The drawings do not show the flange-to-web seams of the built-up columns, so they are not counted. |
+
+**BOQ unit weights.** All five drawings are covered by 7.85 × t, the IS 808 table, or the pipe/rod formulas. No
+OpenAI unit weights were needed, and every section was classified without an OpenAI breakdown. The cone on 16362 is
+developed by code as `1m470 cone plate` (PL8, 1727.9 × 508.5 mm, 0.5% above the drawing weight).
+
+**Welds.** In this run the model correctly marked the 16362 rod cage as tack-welded (the note at D4, "CAGE TO BE
+TACK WELDED"). An earlier run got it wrong, so the weld figures remain estimates.
+
+**Q&A.** Four questions per drawing, asked in one conversation, are saved in `results/<drawing>/qa.md`. The
+answers were spot-checked against the extract: the heaviest part is right on all five drawings, including the
+14278 tie between 3C1 and its main-part row 3m470. The locations, plate thicknesses and bolt lists come back with
+grid cells.
+
+This run exposed one completeness bug, now fixed. On 09970 the bolt list has a row with no connected assembly
+(10 bolts). The chat summary had left it out and reported 8 bolts instead of 18. `compact_extract` used to drop
+empty fields, so that row reached the model without an assembly field; it now carries `"(blank on sheet)"`. A new
+prompt rule also says to list every contributing row and make stated totals equal the listed rows. The re-run
+answer lists all four rows: 18 bolts, 26 nuts and 18 washers, matching the deterministic fastener list.
+
+**Cost of the full run** (5 drawings, one inventory call each, 3 escalations, 20 chat questions): gpt-5.4-mini
+1.09 M input tokens (0.98 M served from the prompt cache) and 11.5 k output; gpt-5.5 59 k input and 16 k output;
+34 calls in total.
+
+## Benchmark against the reference BOQ
+
+```powershell
+python scripts/benchmark_boq.py <drawing.pdf> <reference.xlsx> [--openai]
+```
+
+The benchmark does three things:
+- matches rows on ITEMNO and compares every value column;
+- compares the formula structure of J, L, M, O and P, with row numbers normalised;
+- **evaluates the exported workbook itself** with a small formula evaluator (`benchmark.evaluate`) and compares
+  every computed cell and SUBTOTAL with the reference's values.
+
+This proves the downloaded file computes the same numbers, not just that the Python rows match.
+
+Result for 16807 vs `2GU1 BOQ.xlsx`, both deterministic and with `--openai`:
+
+| Measure | Result |
+|---|---|
+| Rows | 8 / 8; none missing, none extra |
+| Fields | 135 / 136 identical |
+| Formula structure | 0 differences |
+| Evaluated workbook | 0 cell differences |
+| Subtotals | Total qty 66 · calculated 979.5946 kg · drawing 976.84 kg · difference +2.7546 kg (all equal) |
+
+The one differing field is the reference's grade for 2GU1: `E2350A`, where the drawing's BOM says `E350A`. It looks
+like a typo in the reference.
+
+## Configuration
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `OPENAI_API_KEY` | none | Needed for chat and the OpenAI inventory step |
+| `DQA_MODEL` | `gpt-5.4-mini` | Default model |
+| `DQA_DEEP_MODEL` | `gpt-5.5` | Deep mode and escalation |
+| `DQA_CACHE_DIR` | `.dqa_cache` | Extract and inventory cache |
+| `DQA_SAMPLES` | repo root | Folder of sample PDFs for the tests |
+
+Fixed in `config.Settings`:
+
+| Setting | Value |
+|---|---|
+| Zoom crops | 200 dpi, at most 2400 px |
+| Chat tool rounds per turn | 6 |
+| Chat turns kept | 8 |
+| API timeout | 120 s |
+| API retries | 2 |
+
+## Tests
+
+```powershell
+python -m pytest                     # 155 tests, offline, about 1 minute
+```
+
+The tests run against the real sample PDFs; tests whose PDF is missing are skipped. OpenAI is replaced by a fake
+client (`tests/fakes.py`), so no tokens are used.
+
+| File | Covers |
+|---|---|
+| `test_geometry.py` | Clustering, number parsing, token joining, grid map |
+| `test_bom.py`, `test_tables.py`, `test_titleblock_views.py` | Every parser against golden values from the five drawings |
+| `test_extract.py` | The full extract, the checks and the cache |
+| `test_context.py`, `test_render_llm.py` | Page context, tiles, rendering, the LLM wrapper |
+| `test_sections.py` | Section parsing, decomposition, cone development, the angle geometry screen |
+| `test_inventory.py` | Deterministic inventory, weld guardrails, unknown sections, unit weights, escalation, cache |
+| `test_boq.py` | BOQ rows against the 16807 golden values, the benchmark against the reference xlsx (when present), the evaluated workbook on all sheets |
+| `test_chat.py`, `test_app.py`, `test_export.py` | Chat tool loop, Streamlit AppTest, exports |
+
+Live checks that use the real API and cost tokens:
+
+```powershell
+python scripts/live_smoke.py <pdf> "question" ...
+python scripts/benchmark_boq.py <pdf> "2GU1 BOQ.xlsx" --openai
+python scripts/run_all.py
+```
+
+## Code map
+
+```
+app.py                      Streamlit UI
+drawing_qa/
+  config.py                 Settings (env), SCHEMA_VERSION
+  geometry.py               cluster / num / join_tokens / GridMap
+  layout.py                 PageLayout: words, lines, segments, grid over a PyMuPDF page
+  parsers/bom.py            BOM parse + find_tables cross-check
+  parsers/tables.py         abstract, bolts, revisions, notes, mark locations
+  parsers/titleblock.py     bordered-cell title block
+  parsers/views.py          part marks, view labels
+  extract.py                PageExtract assembly + disk cache
+  validate.py               guardrail checks
+  models.py                 Pydantic records (extract, inventory, BoqRow)
+  render.py                 PNG crops, overview and tiles
+  context.py                page context sent to OpenAI
+  llm.py                    OpenAI wrapper (parse / create / usage)
+  chat.py                   ChatSession + tools
+  sections.py               section parsing, built-up and cone decomposition
+  steel_tables.py           IS 808 unit weights
+  boq.py                    BOQ rows
+  inventory.py              deterministic inventory + OpenAI step + guardrails
+  export.py                 JSON / CSV / Excel, BOQ sheet with live formulas
+  benchmark.py              BOQ comparison and formula evaluator
+scripts/run_all.py          batch run → results/
+scripts/benchmark_boq.py    BOQ vs reference workbook
+scripts/live_smoke.py       real-API smoke test
+docs/superpowers/           design spec and implementation plan (with the audit records)
+```
+
+## Known limitations
+
+- **Welds are the weak spot.** The model reads weld topology from the views, and the answers vary from run to run.
+  On 16362, one run marked the wrong joint as tack-welded. The guardrails reject impossible welds but cannot prove
+  a plausible one is right. Weld and electrode figures are estimates and never go into the BOQ.
+- **One reference BOQ.** Only 16807 has ground truth, and it contains only plates, channels and angles. The rules
+  for built-ups, cones, pipes and a fabrication quantity above 1 are checked by tests and reconcile to the BOM
+  weights, but no estimator's BOQ has confirmed them.
+- **Pipe and rod rows run heavier than the drawing.** BOM lengths come before mitre or hole cut-offs, so the BOQ
+  can be 7–15% heavier (09970) and flags such rows. This is expected, not an error.
+- **Text layer required.** Scanned or raster-only PDFs fail the `text_layer` check; there is no OCR.
+- **Template-specific.** The parsers target the TATA STEEL Tekla sheet layout. Other title blocks or BOM layouts
+  need parser changes.
+- **Unit weights from OpenAI** are only used for standard rolled designations that are missing from the table.
+  They are always unverified; add confirmed values to `steel_tables.py` instead.
+
+## Data handling
+
+- The drawings (`*.pdf`), reference workbooks (`*.xlsx`) and `results/` are proprietary client data. They are
+  git-ignored and never committed.
+- The OpenAI key is read only from the environment and is never written to disk or logs.
+- Only the selected page (its images and text) is sent to OpenAI.

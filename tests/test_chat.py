@@ -56,3 +56,11 @@ def test_chat_zoom_targets(settings):
         chat._rect_for("nowhere")
     with pytest.raises(ValueError, match="occurs 2 times"):   # 'M - M' is drawn at N13 and P18
         chat._rect_for("M - M")
+
+
+def test_compact_extract_keeps_bolt_rows_without_assembly(settings):
+    from drawing_qa.chat import compact_extract
+    x = det("09970", settings)
+    bolts = compact_extract(x)["bolts"]
+    assert len(bolts) == len(x.bolts)
+    assert sum(b["assembly_mark"] == "(blank on sheet)" for b in bolts) == sum(not b.assembly_mark for b in x.bolts)

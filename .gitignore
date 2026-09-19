@@ -6,3 +6,5 @@ __pycache__/
 *.pdf
 # user's reference BOQs / exports: keep local
 *.xlsx
+# pipeline outputs derived from the client drawings: keep local
+results/
