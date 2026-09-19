@@ -12,7 +12,7 @@
 - **Extract.** PyMuPDF reads the page once into a `PageLayout`. Deterministic parsers produce typed Pydantic records. Checks guard every number: arithmetic, marks, abstract-by-section, and a second independent BOM parse.
 - **Page context.** Built once per page and placed first in every OpenAI request: the full text layer tagged with sheet-grid cells, plus high-res tiles of the whole sheet. Because the prefix is identical, OpenAI's prompt cache serves most of it on later calls.
 - **Chat** uses the page context, the extract JSON (plus the inventory JSON when built) and zoom/search tools.
-- **Inventory** is deterministic for plates, sections, fasteners and paint, with WH/T built-ups decomposed into plates. One OpenAI call adds welds and interpretations of unknown sections. Guardrails reject anything the sheet can't support, and the call escalates once to `gpt-5.5` when the answer is weak.
+- **Inventory** is deterministic for plates, sections, fasteners and paint, with WH/T built-ups decomposed into plates. One OpenAI call adds weld *topology* (code computes the lengths) and interpretations of unknown sections. Guardrails reject anything the sheet can't support. The call escalates once to `gpt-5.5` when the answer is weak, and each part of the result is then taken from the better run.
 
 **Tech Stack:** Python 3.13, PyMuPDF ≥1.28, openai ≥1.72 (Responses API: `responses.parse` + function tools), Pydantic 2, Streamlit ≥1.50, pandas + openpyxl, pytest.
 
@@ -24,11 +24,11 @@
 - Models: `gpt-5.4-mini` by default, `gpt-5.5` for escalation and deep mode. Override with `DQA_MODEL` / `DQA_DEEP_MODEL`. The API key comes only from `OPENAI_API_KEY` and is never written to disk or logs.
 - **Extraction makes no model calls.** OpenAI is used only for Q&A (chat) and the inventory's weld / unknown-section step.
 - Every OpenAI request carries the whole page: the grid-tagged text layer and the sheet tiles (4 on A1, 6 on A0).
-- Numbers (weights, quantities, lengths) come from the PyMuPDF extract. An OpenAI-proposed plate breakdown is used only if its steel weight is within 2% of the BOM member. Weld figures are estimates and labelled as such.
+- Numbers (weights, quantities, lengths) come from the PyMuPDF extract. An OpenAI-proposed plate breakdown is used only if its thickness is written in the section name and its steel weight is within 2% of the BOM member. Weld lengths are computed from BOM geometry, never taken from the model. Weld metal is labelled "model-read estimate, unverified". Weights are Tekla gross (stock) weights, with no wastage.
 - An OpenAI/API failure never crashes the UI or discards deterministic data. It becomes an `inventory.llm` warning, or an `st.error` in chat.
 - Vector PDFs only, no OCR. A page with fewer than 50 words gives `has_text_layer=False` and a `text_layer` fail check.
 - Sample PDFs stay in the repo root and are git-ignored (proprietary). Tests find them via `DQA_SAMPLES` (default: repo root) and skip when absent. Offline tests never call OpenAI; they use `tests/fakes.py`.
-- Every source file below was run against the 5 sample drawings before this plan was written: 122 tests pass. Copy code verbatim. If a golden value disagrees with a sheet, stop and report; do not loosen the test.
+- Every source file below was run against the 5 sample drawings before this plan was written: 127 tests pass. Copy code verbatim. If a golden value disagrees with a sheet, stop and report; do not loosen the test.
 
 ## File map
 
@@ -557,10 +557,13 @@ class FastenerLine(BaseModel):
 
 
 class WeldLine(BaseModel):
-    parts: list[str]
+    parts: list[str]                                       # [attached part, base part]
     size_mm: float
-    length_mm: float                                       # per joint
+    length_mm: float                                       # per joint, computed from BOM geometry x sides
     count: int                                             # joints per assembly
+    edge: str = ""                                         # length | width | perimeter | circumference
+    sides: int = 1
+    tack: bool = False                                     # tack welds carry no weld-metal estimate
     evidence: str = ""                                     # grid cell / view label the model cited
     total_length_m: float = 0.0                            # × count × assembly qty
     weld_metal_kg: float = 0.0
@@ -2148,9 +2151,9 @@ git commit -m "feat: whole-page model context (grid-tagged text + sheet tiles)"
 - Consumes: `PageExtract`, `page_context`, `LLM.parse_content`, the models' `Inventory*` lines.
 - Produces:
   - Sections: `parse_section(s) -> Parsed(family, …)`, `decompose(parsed, length) -> list[Plate]`, `weight_matches(plates, pc_wt, net_per_piece, tol=0.02)`, `Plate`, `STEEL_KG_M3`.
-  - `deterministic_inventory(x) -> Inventory`, `fasteners(bolts)`, `allowed_weld_sizes(layout, notes)`.
-  - `build_inventory(x, page, layout, llm=None, model="gpt-5.4-mini", deep_model=None) -> Inventory`.
-  - `InventoryLLM` (strict schema: `unknown_sections`, `welds`).
+  - `deterministic_inventory(x) -> Inventory`, `fasteners(bolts)`, `allowed_weld_sizes(layout, notes, regions)`, `weld_length_mm(edge, attached_row, base_row)`.
+  - `build_inventory(x, page, layout, llm=None, model="gpt-5.4-mini", deep_model=None, cache_dir=None) -> Inventory`. Successful OpenAI results are cached as `<cache_dir>/<sha>_p<page>_inventory_<hash(schema, models)>.json`.
+  - `InventoryLLM` (strict schema: `unknown_sections[mark, description, plates]`, `welds[attached, base, edge ∈ {length, width, perimeter, circumference}, sides, size_mm, count, tack, evidence]`).
 
 Decisions (user):
 - Built-ups are decomposed into plates, with no wastage allowance (net as drawn).
@@ -2163,16 +2166,36 @@ Decisions (user):
 - **Reconciliation.** Plates + sections equal the BOM gross total on all 5 sheets. Paint area (BOM total) is within 5% of Σ row area × qty.
 - **Fasteners** are listed as the bolt table gives them. A taper washer with a blank qty is warned about and not counted.
 
-**Weld guardrails** (each one seen live or in a test). A weld is rejected when:
-- its size is not on the sheet (general-note size, or a standard fillet size written next to `TYP.`);
-- it cites a part not in the BOM;
-- its length is over twice the smaller part's (length + width);
-- its count is over 2 × part qty;
-- it exceeds the **per-part joint budget**: 2 joints per piece of the repeated part. Live, the model counted 09970's 4 lug plates against three neighbours, 12 joints for 4 plates.
+**Welds: the model reads topology, code computes geometry** (redesigned after the v2 audit). The v2 audit found that model-written weld lengths were mostly copied view dimensions, e.g. 110 for an all-round weld around a 219.1 mm pipe. So the model now reports, per joint type:
+- the attached part and the base part;
+- which edge of the attached part is welded (`length`, `width`, `perimeter`, `circumference`);
+- sides (1/2), fillet size, count, and whether it is a tack weld;
+- evidence.
 
-Weld metal = length × a²/2 × 7850; electrode = weld metal / 0.6. Both are labelled estimates. `inventory.weld_coverage` warns when weld metal is under 0.5% of the steel weight. Live on 14281 it was 0.98 kg for 26 t, because built-up flange-to-web seams aren't drawn.
+Code computes each run from BOM geometry: part length, plate width or section depth, plate perimeter, or π × the smaller circular diameter of the joint (pipe OD, bar diameter, or the unknown shell's diameter). Live on 09970, the pipe-to-pipe weld became π × 219.1 = 688.3 mm.
 
-**Escalation.** If mini leaves an unknown section unresolved, or more than 30% of its welds are rejected, the OpenAI step re-runs once on `gpt-5.5`, and the better result is kept (more accepted unknowns, then more accepted and fewer rejected welds).
+A weld is rejected when:
+- a part isn't in the BOM (a leading mark token such as "1m470 conical reducer" is reduced to `1m470`);
+- a part is welded to itself;
+- the edge doesn't apply to that part (e.g. the perimeter of a pipe);
+- sides aren't 1 or 2;
+- the size isn't on the sheet;
+- it exceeds the budget of 2 joints per piece of the attached part per (attached, base, edge).
+
+**Allowed sizes** are the general-note size plus standard fillet sizes written on the same row as an exact `TYP.`/`CONT.` callout, outside the BOM, bolt and title tables. On 09970 that is exactly {6} (the old guard also admitted the bolt table's "TYPE" numbers); on 16362 it includes the real 4 mm "4/4 CONT." welds.
+
+**Tack welds** (16362: "CAGE TO BE TACK WELDED") are listed with 0 weld metal.
+
+**Estimates.** Weld metal = length × a²/2 × 7850 and electrode = weld metal / 0.6. `inventory.weld_estimate` is always a warning stating that the figure is a model-read estimate and unverified, and that built-up flange-to-web seams are not drawn and not included.
+
+**Unknown sections.** A breakdown is accepted only if every plate thickness is written in the section name and the weight is within 2%. In the audit probe, a 12 mm plate of the right weight was offered for `SPD…*8`; it is now rejected.
+
+**Escalation.** The OpenAI step re-runs once on `gpt-5.5` when:
+- the mini call failed;
+- an unknown section is unresolved;
+- or more than 30% of more than 2 proposed welds are rejected.
+
+Unknown sections are then taken from the run that resolved more, and welds from the run with the lower rejection rate. The number of accepted welds is deliberately not rewarded. Live on 16362, gpt-5.5 resolved the SPD member as an 8 mm developed plate (weight and thickness pass), and mini's welds were kept: 4 mm CONT. welds, and the cage rods as tack welds.
 
 - [ ] **Step 1: Write failing tests**
 
@@ -2220,6 +2243,9 @@ def test_weight_matches_rejects_a_wrong_breakdown():
 
 `tests/test_inventory.py`:
 ```python
+import math
+from pathlib import Path
+
 import pymupdf
 import pytest
 
@@ -2264,62 +2290,113 @@ def test_fasteners_from_bolt_table_09970(settings):
     assert {c.id: c.level for c in inv.checks}["inventory.taper_qty"] == "warn"   # qty column blank on sheet
 
 
-def test_allowed_weld_sizes_include_general_note(layouts, settings):
-    sizes = allowed_weld_sizes(layouts("09970"), det("09970", settings).notes)
-    assert 6.0 in sizes and 7.0 not in sizes
+def test_allowed_weld_sizes_come_from_weld_callouts_only(layouts, settings):
+    x = det("09970", settings)
+    assert allowed_weld_sizes(layouts("09970"), x.notes, x.regions.values()) == {6.0}   # not bolt-table TYPE numbers
+    x = det("16362", settings)
+    assert {4.0, 6.0} <= allowed_weld_sizes(layouts("16362"), x.notes, x.regions.values())   # '4/4 CONT.' welds
 
 
 def _llm_answer(unknown=(), welds=()):
     return lambda model, schema: InventoryLLM(unknown_sections=list(unknown), welds=list(welds))
 
 
-def _run(drg, settings, fn, deep_model=None):
+def _weld(attached, base, edge, size=6, sides=1, count=1, tack=False, evidence=""):
+    return {"attached": attached, "base": base, "edge": edge, "sides": sides, "size_mm": size, "count": count,
+            "tack": tack, "evidence": evidence}
+
+
+def _run(drg, settings, fn, deep_model=None, cache_dir=None):
     p = sample_path(drg)
     page = pymupdf.open(p)[0]
     client = FakeClient(parse_fn=fn)
-    inv = build_inventory(det(drg, settings), page, PageLayout.from_page(page), LLM(client), "mini", deep_model)
+    inv = build_inventory(det(drg, settings), page, PageLayout.from_page(page), LLM(client), "mini", deep_model,
+                          cache_dir=cache_dir)
     return inv, client
 
 
-def test_weld_guardrails_09970(settings):
+def test_weld_lengths_come_from_bom_geometry_not_the_model(settings):
+    welds = [_weld("4p639", "4DC3", "width", count=4),              # PL8*94 x 150: short edge 94
+             _weld("4p660", "4m706", "circumference", sides=2),     # all round the 219.1 pipe, both sides
+             _weld("4p641", "4DC3", "length", count=4)]             # PL8*83 x 150: long edge 150
+    inv, _ = _run("09970", settings, _llm_answer(welds=welds))
+    got = {tuple(w.parts): (w.edge, w.length_mm) for w in inv.welds}
+    assert got[("4p639", "4DC3")] == ("width", 94)
+    assert got[("4p660", "4m706")] == ("circumference", round(2 * math.pi * 219.1, 1))
+    assert got[("4p641", "4DC3")] == ("length", 150)
+    w = next(w for w in inv.welds if w.parts == ["4p641", "4DC3"])
+    assert w.total_length_m == 0.6 and w.weld_metal_kg == pytest.approx(0.6 * 18e-6 * 7850, abs=1e-3)
+
+
+def test_weld_guardrails_reject_what_the_sheet_cannot_support(settings):
     welds = [
-        {"parts": ["4p639", "4DC3"], "size_mm": 6, "length_mm": 150, "count": 4, "evidence": "B - B"},     # ok
-        {"parts": ["4p639", "4m666"], "size_mm": 6, "length_mm": 150, "count": 4, "evidence": "B - B"},    # ok (8 = 2x4)
-        {"parts": ["4p639", "4m665"], "size_mm": 6, "length_mm": 150, "count": 4, "evidence": "E7"},       # over budget
-        {"parts": ["4p637", "4DC3"], "size_mm": 6, "length_mm": 2233.9, "count": 1, "evidence": "A - A"},  # too long
-        {"parts": ["4p999", "4DC3"], "size_mm": 6, "length_mm": 100, "count": 1, "evidence": ""},          # unknown part
-        {"parts": ["4p660", "4m706"], "size_mm": 7, "length_mm": 300, "count": 2, "evidence": "D - D"},    # size not on sheet
+        _weld("4p639", "4DC3", "width", count=8),                   # ok: 2 per piece (qty 4)
+        _weld("4p639", "4DC3", "width", count=1),                   # over the per-pair budget
+        _weld("4p639", "4m666", "width", count=4),                  # ok: different base part, own budget
+        _weld("4p999", "4DC3", "length"),                           # unknown part
+        _weld("4p660", "4m706", "circumference", size=10),          # 10 is not a weld size on this sheet
+        _weld("4m706", "4m665", "perimeter"),                       # perimeter does not apply to a pipe
+        _weld("4p637", "4p637", "length"),                          # welded to itself
+        _weld("4p638", "4DC3", "length", sides=3),                  # sides must be 1 or 2
     ]
     inv, _ = _run("09970", settings, _llm_answer(welds=welds))
     assert [w.parts for w in inv.welds] == [["4p639", "4DC3"], ["4p639", "4m666"]]
     reasons = " | ".join(inv.rejected_welds)
-    for needle in ("max 8", "exceeds joint bound", "unknown parts ['4p999']", "size 7 not on sheet"):
-        assert needle in reasons
-    w = inv.welds[0]
-    assert w.total_length_m == 0.6 and w.weld_metal_kg == pytest.approx(0.6 * 18e-6 * 7850, abs=1e-3)
-    assert inv.electrode_kg == pytest.approx(inv.weld_metal_kg / 0.6, abs=0.01)
+    for needle in ("max 8", "unknown part(s) ['4p999']", "size 10 not on sheet", "does not apply to 4m706",
+                   "welded to itself", "sides 3"):
+        assert needle in reasons, needle
 
 
-def test_unknown_section_breakdown_accepted_only_with_matching_weight(settings):
-    good = {"mark": "1m470", "description": "square-to-square transition", "plates": [
+def test_tack_welds_carry_no_weld_metal(settings):
+    inv, _ = _run("16362", settings, _llm_answer(welds=[_weld("1m473", "1DC1", "length", count=22, tack=True)]))
+    assert inv.welds[0].tack and inv.welds[0].weld_metal_kg == 0 and inv.weld_metal_kg == 0
+
+
+def test_unknown_section_breakdown_needs_matching_weight_and_thickness(settings):
+    good = {"mark": "1m470", "description": "cone developed plate", "plates": [
         {"thickness_mm": 8, "width_mm": 1729, "length_mm": 506, "count": 1}]}             # 54.94 kg vs 54.93
     inv, _ = _run("16362", settings, _llm_answer(unknown=[good]))
-    item = inv.unclassified[0]
-    assert item.accepted and "SPD508*508*608*608*8" not in {s.profile for s in inv.sections}
+    assert inv.unclassified[0].accepted and "SPD508*508*608*608*8" not in {s.profile for s in inv.sections}
     assert {c.id: c.level for c in inv.checks}["inventory.weight"] == "pass"
-    bad = {**good, "plates": [{"thickness_mm": 8, "width_mm": 600, "length_mm": 506, "count": 1}]}
-    inv, _ = _run("16362", settings, _llm_answer(unknown=[bad]))
-    assert not inv.unclassified[0].accepted and "rejected" in inv.unclassified[0].note
-    assert "SPD508*508*608*608*8" in {s.profile for s in inv.sections}
+    thick = {**good, "plates": [{"thickness_mm": 12, "width_mm": 1153, "length_mm": 506, "count": 1}]}   # same kg
+    inv, _ = _run("16362", settings, _llm_answer(unknown=[thick]))
+    assert not inv.unclassified[0].accepted and "not in the section name" in inv.unclassified[0].note
+    light = {**good, "plates": [{"thickness_mm": 8, "width_mm": 600, "length_mm": 506, "count": 1}]}
+    inv, _ = _run("16362", settings, _llm_answer(unknown=[light]))
+    assert not inv.unclassified[0].accepted and "SPD508*508*608*608*8" in {s.profile for s in inv.sections}
 
 
-def test_escalates_once_and_keeps_the_better_answer(settings):
-    good = {"mark": "1m470", "description": "transition", "plates": [
+def test_escalation_prefers_resolved_unknowns_not_more_welds(settings):
+    good = {"mark": "1m470", "description": "cone", "plates": [
         {"thickness_mm": 8, "width_mm": 1729, "length_mm": 506, "count": 1}]}
-    fn = lambda model, schema: InventoryLLM(unknown_sections=[good] if model == "deep" else [], welds=[])
+    many = [_weld("1p375", "1DC1", "length", count=2), _weld("1m471", "1DC1", "length")]
+    fn = lambda model, schema: (InventoryLLM(unknown_sections=[good], welds=[]) if model == "deep"
+                                else InventoryLLM(unknown_sections=[], welds=many))
     inv, client = _run("16362", settings, fn, deep_model="deep")
     assert [m for m, _, _ in client.responses.parse_calls] == ["mini", "deep"]
-    assert inv.model == "deep" and inv.unclassified[0].accepted
+    assert inv.unclassified[0].accepted                                # sections from the run that resolved them
+    assert [w.parts for w in inv.welds] == [["1p375", "1DC1"], ["1m471", "1DC1"]]   # welds kept from mini
+    assert inv.model == "deep (sections) + mini (welds)"
+
+
+def test_descriptive_part_names_are_reduced_to_marks(settings):
+    good = {"mark": "1m470 conical reducer", "description": "cone", "plates": [
+        {"thickness_mm": 8, "width_mm": 1729, "length_mm": 506, "count": 1}]}
+    welds = [_weld("1DC1 pipe", "1m470 conical reducer", "circumference")]
+    inv, _ = _run("16362", settings, _llm_answer(unknown=[good], welds=welds))
+    assert inv.unclassified[0].accepted
+    assert inv.welds and inv.welds[0].parts == ["1DC1", "1m470"] and inv.rejected_welds == []
+    assert inv.welds[0].length_mm == round(math.pi * 508, 1)          # smaller circular diameter of the joint
+
+
+def test_escalates_when_the_mini_call_fails(settings):
+    def fn(model, schema):
+        if model == "mini":
+            raise RuntimeError("timeout")
+        return InventoryLLM(unknown_sections=[], welds=[])
+    inv, client = _run("09970", settings, fn, deep_model="deep")
+    assert [m for m, _, _ in client.responses.parse_calls] == ["mini", "deep"] and inv.model == "deep"
+    assert not any(c.id == "inventory.llm" for c in inv.checks)
 
 
 def test_openai_failure_keeps_deterministic_inventory(settings):
@@ -2330,19 +2407,29 @@ def test_openai_failure_keeps_deterministic_inventory(settings):
     assert inv.plates and inv.welds == []
 
 
+def test_checks_are_not_duplicated_and_estimate_is_labelled(settings):
+    inv, _ = _run("09970", settings, _llm_answer(welds=[_weld("4p641", "4DC3", "length", count=4)]))
+    ids = [c.id for c in inv.checks]
+    assert len(ids) == len(set(ids))                                   # taper_qty etc. appear once
+    est = next(c for c in inv.checks if c.id == "inventory.weld_estimate")
+    assert est.level == "warn" and "unverified" in est.message
+    inv, _ = _run("14281", settings, _llm_answer())
+    assert "flange-to-web seams" in next(c for c in inv.checks if c.id == "inventory.weld_estimate").message
+
+
+def test_openai_inventory_is_cached_on_disk(settings, tmp_path):
+    inv1, c1 = _run("09970", settings, _llm_answer(welds=[_weld("4p641", "4DC3", "length")]), cache_dir=tmp_path)
+    inv2, c2 = _run("09970", settings, _llm_answer(), cache_dir=tmp_path)
+    assert len(c2.responses.parse_calls) == 0 and inv2 == inv1
+    assert len(list(Path(tmp_path).glob("*_inventory_*.json"))) == 1
+
+
 def test_request_carries_full_page_context(settings):
     inv, client = _run("09970", settings, _llm_answer())
     content = client.responses.parse_calls[0][2][0]["content"]
     assert content[0]["text"].startswith("SHEET TEXT LAYER") and "[D8] A - A" in content[0]["text"]
     assert sum(c["type"] == "input_image" for c in content) == 4      # 2x2 tiles on an A1 sheet
     assert "UNKNOWN sections: none" in content[-1]["text"]
-
-
-def test_weld_coverage_warns_when_estimate_is_implausibly_small(settings):
-    welds = [{"parts": ["3p307", "3C2"], "size_mm": 10, "length_mm": 400, "count": 4, "evidence": "A - A"}]
-    inv, _ = _run("14281", settings, _llm_answer(welds=welds))
-    c = next(c for c in inv.checks if c.id == "inventory.weld_coverage")
-    assert c.level == "warn" and "flange-to-web seams" in c.message        # 14281 has WH built-ups
 ```
 
 - [ ] **Step 2: Run to verify failure**
@@ -2442,20 +2529,27 @@ def weight_matches(plates: list[Plate], bom_net_kg: float | None, bom_gross_kg: 
 ```python
 """Inventory for one page: what material, how much.
 
-Deterministic (from the validated extract):
+Deterministic (from the validated extract; independently re-computed by the auditor):
   plates by thickness + grade (incl. WH / T built-ups decomposed into plates, weight-checked),
   sections by profile + grade, fasteners from the bolt list, paint area from the BOM.
+  Weights are Tekla GROSS (stock) weights; no wastage allowance.
 OpenAI-assisted (one structured call with the full page image + text):
-  - sections the code cannot parse (e.g. SPD508*508*608*608*8): description + plate breakdown,
-    accepted only if the plates weigh within 2% of the BOM member;
-  - welds read from the views: parts joined, fillet size, length, count. Guardrails reject welds whose
-    size is not on the sheet, that cite unknown parts, or that are longer than the parts can carry.
-Weld metal and electrode figures are estimates and labelled as such."""
+  - sections the code cannot parse (e.g. SPD508*508*608*608*8): description + plate breakdown, accepted only
+    if every plate thickness is written in the section name and the plates weigh within 2% of the BOM member;
+  - welds: the model reads the TOPOLOGY only (which part is welded to which, which edge, sides, fillet size,
+    how many, tack or not). The weld LENGTH is computed by code from BOM geometry (part length / width,
+    plate perimeter, or pi x diameter for circular joints), so copied view dimensions cannot become lengths.
+Weld metal and electrode figures are model-read estimates, unverified, and labelled as such."""
+import hashlib
+import math
 import re
 from collections import defaultdict
+from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel
 
+from .config import SCHEMA_VERSION
 from .context import page_context
 from .geometry import num, xc, yc
 from .models import Check, FastenerLine, Inventory, InventoryItem, PlateLine, SectionLine, WeldLine
@@ -2480,10 +2574,13 @@ class UnknownSectionLLM(BaseModel):
 
 
 class WeldLLM(BaseModel):
-    parts: list[str]
+    attached: str                                   # the part whose edge is welded (e.g. a lug plate)
+    base: str                                       # the part it is welded to (e.g. the pipe)
+    edge: Literal["length", "width", "perimeter", "circumference"]
+    sides: int                                      # 1 or 2 (fillet on both sides)
     size_mm: float
-    length_mm: float
-    count: int
+    count: int                                      # such joints per assembly
+    tack: bool                                      # drawing says tack welded
     evidence: str
 
 
@@ -2494,15 +2591,20 @@ class InventoryLLM(BaseModel):
 
 INSTRUCTIONS = """You assist a steel fabrication estimator. You get one drawing sheet (full text layer tagged with grid
 cells, and images of the whole sheet), its validated bill of materials, and a list of UNKNOWN sections.
-1. unknown_sections: for each listed mark only, say what the member is (description) and give the plates it
-   is fabricated from for ONE piece (thickness, width, length in mm, count). Leave plates empty if it is not
-   made from plates.
-2. welds: list every weld you can see in the views for ONE assembly. For each: the part marks it joins
-   (use marks exactly as written; include the assembly main part if a part is welded to it), fillet leg size
-   in mm (as written at the weld symbol; the general note gives the size when no size is shown), weld length
-   per joint in mm (from the dimensions of the joined edge; count both sides if the symbol says so or shows
-   both sides), how many such joints the assembly has (e.g. 'TYP.' on a part with qty 4), and evidence
-   (view label and/or grid cell where you read it). Do not invent welds you cannot see."""
+1. unknown_sections: for each listed mark only, say what the member is (description) and give the plates it is
+   fabricated from for ONE piece (thickness, width, length in mm, count), e.g. the developed plate of a cone.
+   Plate thickness must be the one written in the section name. Leave plates empty if unsure.
+2. welds: list the welds shown in the views for ONE assembly. For each joint type give:
+   attached = the part whose edge is welded (e.g. a stiffener, lug, cleat); base = the part it is welded to
+   (attached and base are part MARKS only, exactly as in the BOM, e.g. '4p639' - no descriptions);
+   edge = which edge of the ATTACHED part carries the weld: 'length' (its long edge), 'width' (its short edge),
+   'perimeter' (all round a plate), 'circumference' (all round a pipe / circular joint);
+   sides = 2 if welded on both sides (symbol on both sides or 'both sides'), else 1;
+   size_mm = fillet leg written at the weld symbol (use the general-note size when none is written);
+   count = how many such joints per assembly (e.g. 'TYP.' on a part with qty 4 -> 4);
+   tack = true only if the drawing says the part is tack welded;
+   evidence = view label and/or grid cell where you read it.
+   Do not give lengths: they are computed from the bill of materials. Do not invent welds you cannot see."""
 
 
 def _asm_qty(x):
@@ -2510,29 +2612,53 @@ def _asm_qty(x):
     return b.assembly.qty if b and b.assembly and b.assembly.qty else 1
 
 
-def _width_mm(section, length):
-    """A generous joint-length bound: the part's edge perimeter proxy (mm)."""
-    p = parse_section(section)
-    nums = [float(v) for v in re.findall(r"\d+(?:\.\d+)?", p.profile)]
-    if p.family == "plate":
-        return p.width_mm
-    if p.family == "built_up":
-        return 2 * p.b + p.d
+def _nums(section):
+    return [float(v) for v in re.findall(r"\d+(?:\.\d+)?", section)]
+
+
+def _diameter(row):
+    """Outside diameter of a circular part (pipe, round bar, conical/unknown shell), else None."""
+    p = parse_section(row.section)
     if p.family in ("pipe", "round"):
-        return 3.1416 * nums[0]
-    if nums:
-        return sum(nums[:2]) if p.family == "angle" else 2 * nums[0]
-    return length
+        return _nums(p.profile)[0]
+    if p.family == "unknown":
+        big = [v for v in _nums(p.profile) if v >= 50]
+        return min(big) if big else None
+    return None
 
 
-def allowed_weld_sizes(layout, notes) -> set[float]:
-    """Fillet sizes the sheet actually shows: the general-note size plus standard sizes written near 'TYP.'."""
+def weld_length_mm(edge, att, base):
+    """Length of one weld run from BOM geometry; None when the edge does not apply to the part."""
+    p = parse_section(att.section)
+    if edge == "length":
+        return att.length_mm
+    if edge == "width":
+        if p.family == "plate":
+            return p.width_mm
+        if p.family == "built_up":
+            return p.d
+        n = _nums(p.profile)
+        return n[0] if n and p.family in ("angle", "channel", "beam") else None
+    if edge == "perimeter":
+        return 2 * (att.length_mm + p.width_mm) if p.family == "plate" else None
+    if edge == "circumference":
+        ds = [d for d in (_diameter(att), _diameter(base) if base else None) if d]
+        return math.pi * min(ds) if ds else None
+    return None
+
+
+def allowed_weld_sizes(layout, notes, regions=()) -> set[float]:
+    """Fillet sizes the sheet shows: the general-note size, plus standard sizes written on the same row as a
+    'TYP.' / 'CONT.' weld callout (e.g. '6 TYP.', '4/4 CONT.'), ignoring the BOM, bolt and title tables."""
     sizes = {float(m) for n in notes for m in re.findall(r"(\d+)\s*MM FILLET", n.upper())}
-    typ = [w for w in layout.words if w[4].startswith("TYP")]
+    inside = lambda w: any(r[0] <= xc(w) <= r[2] and r[1] <= yc(w) <= r[3] for r in regions)
+    anchors = [w for w in layout.words if w[4] in ("TYP.", "TYP", "CONT.", "CONT") and not inside(w)]
     for w in layout.words:
-        if re.fullmatch(r"\d{1,2}", w[4]) and int(w[4]) in FILLET_SIZES and \
-                any(abs(xc(w) - xc(t)) < 60 and abs(yc(w) - yc(t)) < 40 for t in typ):
-            sizes.add(float(w[4]))
+        m = re.fullmatch(r"(\d{1,2})(?:/(\d{1,2}))?", w[4])
+        if not m or inside(w):
+            continue
+        if any(abs(yc(w) - yc(a)) <= 12 and abs(xc(a) - xc(w)) < 80 for a in anchors):
+            sizes |= {float(g) for g in m.groups() if g and int(g) in FILLET_SIZES}
     return sizes
 
 
@@ -2570,10 +2696,10 @@ def deterministic_inventory(x) -> Inventory:
             inv.checks.append(Check(id=f"inventory.decompose.{p.item_no}", level="warn", region="inventory",
                                     message=f"{p.item_no} {p.section}: plate recipe does not match BOM weight; "
                                             "kept as a section."))
-        family = ps.family if ps.family not in ("built_up",) else "built-up"
-        key = (ps.profile, p.material)
-        sl = sections.setdefault(key, SectionLine(profile=ps.profile, family=family if family != "unknown" else "other",
-                                                  grade=p.material, pieces=0, total_length_m=0, weight_kg=0))
+        family = "built-up" if ps.family == "built_up" else ("other" if ps.family == "unknown" else ps.family)
+        sl = sections.setdefault((ps.profile, p.material), SectionLine(profile=ps.profile, family=family,
+                                                                       grade=p.material, pieces=0,
+                                                                       total_length_m=0, weight_kg=0))
         sl.pieces += q
         sl.total_length_m += (p.length_mm or 0) * q / 1000
         sl.weight_kg += (p.gross_kg or 0) * q_asm
@@ -2619,77 +2745,121 @@ def fasteners(bolts) -> list[FastenerLine]:
     return sorted(acc.values(), key=lambda f: (f.item, f.dia_mm, f.length_mm))
 
 
+def _set_check(inv, check):
+    inv.checks = [c for c in inv.checks if c.id != check.id] + [check]
+
+
 def _steel_checks(inv, x):
     listed = sum(p.weight_kg for p in inv.plates) + sum(s.weight_kg for s in inv.sections)
     ok = abs(listed - inv.total_steel_kg) <= max(0.1, 0.005 * inv.total_steel_kg)
-    inv.checks = [c for c in inv.checks if c.id != "inventory.weight"]
-    inv.checks.append(Check(id="inventory.weight", level="pass" if ok else "fail", region="inventory",
-                            message=f"Plates + sections = {listed:.2f} kg; BOM gross total = {inv.total_steel_kg} kg."))
-    b = x.bom
-    per_piece = sum((p.surface_area_m2 or 0) * (p.qty or 0) for p in b.parts) * inv.assembly_qty
+    _set_check(inv, Check(id="inventory.weight", level="pass" if ok else "fail", region="inventory",
+                          message=f"Plates + sections = {listed:.2f} kg; BOM gross total = {inv.total_steel_kg} kg."))
+    per_piece = sum((p.surface_area_m2 or 0) * (p.qty or 0) for p in x.bom.parts) * inv.assembly_qty
     if inv.paint_area_m2:
         ok = abs(per_piece - inv.paint_area_m2) <= 0.05 * inv.paint_area_m2
-        inv.checks = [c for c in inv.checks if c.id != "inventory.paint"]
-        inv.checks.append(Check(id="inventory.paint", level="pass" if ok else "warn", region="inventory",
-                                message=f"Paint area {inv.paint_area_m2} m² (BOM total); Σ row area × qty = "
-                                        f"{per_piece:.2f} m²."))
+        _set_check(inv, Check(id="inventory.paint", level="pass" if ok else "warn", region="inventory",
+                              message=f"Paint area {inv.paint_area_m2} m² (BOM total); Σ row area × qty = "
+                                      f"{per_piece:.2f} m²."))
     bad_taper = [r.assembly_mark or "(own)" for r in x.bolts if r.taper_dia and num(r.taper_qty) is None]
     if bad_taper:
-        inv.checks.append(Check(id="inventory.taper_qty", level="warn", region="inventory",
-                                message=f"Taper washers listed without a quantity for {bad_taper}; not counted."))
+        _set_check(inv, Check(id="inventory.taper_qty", level="warn", region="inventory",
+                              message=f"Taper washers listed without a quantity for {bad_taper}; not counted."))
+
+
+# ------------------------------------------------------------------ OpenAI-assisted step
+def _rejection_rate(inv):
+    n = len(inv.welds) + len(inv.rejected_welds)
+    return len(inv.rejected_welds) / n if n else 0.0
 
 
 def _needs_escalation(inv) -> bool:
+    if any(c.id == "inventory.llm" for c in inv.checks):
+        return True                                               # the mini call itself failed
     unresolved = any(not u.accepted for u in inv.unclassified)
-    rejected = len(inv.rejected_welds)
-    return unresolved or rejected > 0.3 * max(1, rejected + len(inv.welds))
+    proposed = len(inv.welds) + len(inv.rejected_welds)
+    return unresolved or (proposed > 2 and _rejection_rate(inv) > 0.3)
 
 
-def _score(inv):
-    return (sum(u.accepted for u in inv.unclassified), len(inv.welds) - 2 * len(inv.rejected_welds))
+def _cache_file(cache_dir, x, model, deep_model):
+    tag = hashlib.sha256(f"{SCHEMA_VERSION}|{model}|{deep_model}".encode()).hexdigest()[:10]
+    return Path(cache_dir) / f"{x.file_sha256[:20]}_p{x.page_index}_inventory_{tag}.json"
 
 
-def build_inventory(x, page, layout, llm=None, model="gpt-5.4-mini", deep_model=None) -> Inventory:
-    """Deterministic inventory, then one OpenAI pass; if that pass leaves unknown sections unresolved or has
-    more than 30% of its welds rejected, one retry on deep_model and the better-scoring result is kept."""
-    if llm is None or x.bom is None:
-        return deterministic_inventory(x)
-    before = llm.usage_summary()
-    inv = _llm_inventory(x, page, layout, llm, model)
-    if deep_model and deep_model != model and not any(c.id == "inventory.llm" for c in inv.checks)             and _needs_escalation(inv):
-        deep = _llm_inventory(x, page, layout, llm, deep_model)
-        if not any(c.id == "inventory.llm" for c in deep.checks) and _score(deep) > _score(inv):
-            inv = deep
-    after = llm.usage_summary()
-    inv.usage = {f"{m}:{k}": v - before.get(m, {}).get(k, 0) for m, u in after.items() for k, v in u.items()
-                 if v - before.get(m, {}).get(k, 0)}
-    return inv
-
-
-def _llm_inventory(x, page, layout, llm, model) -> Inventory:
-    inv = deterministic_inventory(x)
-    inv.model = model
-    rows = {p.item_no: p for p in x.bom.parts}
-    unknown = [u.mark for u in inv.unclassified]
+def _ask(x, page, layout, llm, model, unknown):
+    """One structured OpenAI call with the whole page. Returns (InventoryLLM, None) or (None, error text)."""
     bom_txt = "\n".join(f"{p.item_no} | {p.section} | L={p.length_mm} | qty={p.qty} | pc_wt={p.pc_wt} | {p.material}"
                         for p in x.bom.parts)
-    text = (f"ASSEMBLY {inv.assembly_mark} x {inv.assembly_qty}\nBOM (mark | section | length mm | qty | piece kg | "
-            f"grade):\n{bom_txt}\nNOTES:\n" + "\n".join(x.notes) + f"\nUNKNOWN sections: {unknown or 'none'}")
+    asm = x.bom.assembly
+    text = (f"ASSEMBLY {asm.erection_mark if asm else ''} x {asm.qty if asm and asm.qty else 1}\n"
+            f"BOM (mark | section | length mm | qty | piece kg | grade):\n{bom_txt}\nNOTES:\n" + "\n".join(x.notes)
+            + f"\nUNKNOWN sections: {unknown or 'none'}")
     try:
         content = page_context(page, layout) + [{"type": "input_text", "text": text}]
-        out = llm.parse_content(model, INSTRUCTIONS, content, InventoryLLM)
+        return llm.parse_content(model, INSTRUCTIONS, content, InventoryLLM), None
     except Exception as e:
+        return None, f"{model}: {type(e).__name__}: {e}"
+
+
+def _assemble(x, layout, unknown_answers, welds, model_label, errors) -> Inventory:
+    inv = deterministic_inventory(x)
+    inv.model = model_label
+    rows = {p.item_no: p for p in x.bom.parts}
+    if unknown_answers is not None:
+        _apply_unknown(inv, unknown_answers, rows, [u.mark for u in inv.unclassified])
+    if welds is not None:
+        _apply_welds(inv, welds, rows, allowed_weld_sizes(layout, x.notes, x.regions.values()))
+    if errors and unknown_answers is None and welds is None:
         inv.checks.append(Check(id="inventory.llm", level="warn", region="inventory",
-                                message=f"OpenAI step failed ({type(e).__name__}: {e}); deterministic inventory only."))
-        return inv
-    _apply_unknown(inv, out.unknown_sections, rows, unknown)
-    _apply_welds(inv, out.welds, rows, allowed_weld_sizes(layout, x.notes))
+                                message=f"OpenAI step failed ({'; '.join(errors)}); deterministic inventory only."))
     _steel_checks(inv, x)
     return inv
 
 
+def build_inventory(x, page, layout, llm=None, model="gpt-5.4-mini", deep_model=None, cache_dir=None) -> Inventory:
+    """Deterministic inventory, then one OpenAI pass. Escalate once to deep_model when that pass failed, left an
+    unknown section unresolved, or had >30% of >2 proposed welds rejected. After escalation each part is taken
+    from the better run: unknown sections from the run that resolved more; welds from the run with the lower
+    rejection rate (the number of accepted welds is deliberately not rewarded). Successful results are cached."""
+    if llm is None or x.bom is None:
+        return deterministic_inventory(x)
+    cache = _cache_file(cache_dir, x, model, deep_model) if cache_dir else None
+    if cache and cache.exists():
+        return Inventory.model_validate_json(cache.read_text(encoding="utf-8"))
+    before = llm.usage_summary()
+    unknown = [u.mark for u in deterministic_inventory(x).unclassified]
+    out, err = _ask(x, page, layout, llm, model, unknown)
+    errors = [err] if err else []
+    inv = _assemble(x, layout, out.unknown_sections if out else None, out.welds if out else None, model, errors)
+    if deep_model and deep_model != model and _needs_escalation(inv):
+        deep, derr = _ask(x, page, layout, llm, deep_model, unknown)
+        if derr:
+            errors.append(derr)
+        runs = [(model, out), (deep_model, deep)]
+        runs = [(m, o) for m, o in runs if o is not None]
+        if runs:
+            trial = {m: _assemble(x, layout, o.unknown_sections, o.welds, m, []) for m, o in runs}
+            u_m = max(trial, key=lambda m: sum(u.accepted for u in trial[m].unclassified))        # first wins ties
+            w_m = min(trial, key=lambda m: _rejection_rate(trial[m]))
+            label = u_m if u_m == w_m else f"{u_m} (sections) + {w_m} (welds)"
+            src = dict(runs)
+            inv = _assemble(x, layout, src[u_m].unknown_sections, src[w_m].welds, label, errors)
+    after = llm.usage_summary()
+    inv.usage = {f"{m}:{k}": v - before.get(m, {}).get(k, 0) for m, u in after.items() for k, v in u.items()
+                 if v - before.get(m, {}).get(k, 0)}
+    if cache and not any(c.id == "inventory.llm" for c in inv.checks):
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(inv.model_dump_json(indent=1), encoding="utf-8")
+    return inv
+
+
+def _mark(s, known):
+    """'1m470 conical reducer' -> '1m470' when the leading token is a known mark; otherwise unchanged."""
+    head = re.split(r"[\s,(/]", s.strip(), maxsplit=1)[0]
+    return head if head in known else s.strip()
+
+
 def _apply_unknown(inv, answers, rows, unknown):
-    by_mark = {a.mark: a for a in answers if a.mark in unknown}
+    by_mark = {_mark(a.mark, set(unknown)): a for a in answers if _mark(a.mark, set(unknown)) in unknown}
     for item in inv.unclassified:
         a = by_mark.get(item.mark)
         if a is None:
@@ -2698,19 +2868,22 @@ def _apply_unknown(inv, answers, rows, unknown):
         p = rows[item.mark]
         pls = [Plate(pl.thickness_mm, pl.width_mm, pl.length_mm, pl.count) for pl in a.plates]
         item.description = a.description
-        if pls and weight_matches(pls, p.pc_wt, (p.net_kg or 0) / (p.qty or 1)):
+        written = set(_nums(p.section))
+        wrong_t = sorted({pl.thickness_mm for pl in pls} - written)
+        if pls and not wrong_t and weight_matches(pls, p.pc_wt, (p.net_kg or 0) / (p.qty or 1)):
             item.accepted = True
-            item.note = "plate breakdown matches BOM weight (±2%)"
-            q = (p.qty or 0) * inv.assembly_qty
-            _move_to_plates(inv, p, pls, q)
+            item.note = "plate breakdown matches BOM weight (±2%) and the thickness in the section name"
+            _move_to_plates(inv, p, pls, (p.qty or 0) * inv.assembly_qty)
+        elif wrong_t:
+            item.note = f"plate thickness {wrong_t} is not in the section name {p.section}: rejected"
         else:
             w = sum(pl.weight_kg for pl in pls)
             item.note = (f"plate breakdown {w:.2f} kg vs BOM {p.pc_wt} kg per piece: rejected, kept as a section"
                          if pls else "no plate breakdown: kept as a section")
     pending = [i.mark for i in inv.unclassified if not i.accepted]
-    inv.checks.append(Check(id="inventory.unclassified", level="warn" if pending else "pass", region="inventory",
-                            message=f"Sections needing review: {pending}" if pending else
-                            "Every BOM member is classified."))
+    _set_check(inv, Check(id="inventory.unclassified", level="warn" if pending else "pass", region="inventory",
+                          message=f"Sections needing review: {pending}" if pending else
+                          "Every BOM member is classified."))
 
 
 def _move_to_plates(inv, p, pls, q):
@@ -2736,58 +2909,60 @@ def _move_to_plates(inv, p, pls, q):
 
 
 def _apply_welds(inv, welds, rows, sizes):
-    marks = set(rows) | ({inv.assembly_mark} if inv.assembly_mark else set())
-    rejected = []
-    used = defaultdict(int)
+    rejected, used = [], defaultdict(int)
+    known = set(rows) | {inv.assembly_mark}
     for w in welds:
-        unknown = [m for m in w.parts if m not in marks]
+        w = w.model_copy(update={"attached": _mark(w.attached, known), "base": _mark(w.base, known)})
+        att, base = rows.get(w.attached), rows.get(w.base)
         why = []
-        if not w.parts or unknown:
-            why.append(f"unknown parts {unknown}")
+        if att is None or (base is None and w.base != inv.assembly_mark):
+            why.append(f"unknown part(s) {[m for m in (w.attached, w.base) if m not in rows]}")
+        if w.attached == w.base:
+            why.append("a part cannot be welded to itself")
         if w.size_mm not in sizes:
             why.append(f"size {w.size_mm:g} not on sheet {sorted(sizes)}")
-        cited = [rows[m] for m in w.parts if m in rows]
-        if cited:
-            limit = min(2 * ((r.length_mm or 0) + _width_mm(r.section, r.length_mm or 0)) for r in cited)
-            if w.length_mm <= 0 or w.length_mm > limit:
-                why.append(f"length {w.length_mm:g} mm exceeds joint bound {limit:.0f} mm")
-            if w.count < 1 or w.count > 2 * max((r.qty or 1) for r in cited):
-                why.append(f"count {w.count} implausible for part qty")
-        if cited and not why:
-            # joint budget: the attached part (the repeated, highest-qty one, e.g. 4 lugs on 1 pipe) carries at
-            # most 2 joints per piece (both sides); stops the model counting one plate's welds once per neighbour
-            att = max(cited, key=lambda r: r.qty or 1)
-            if used[att.item_no] + w.count > 2 * (att.qty or 1):
-                why.append(f"{att.item_no} would have {used[att.item_no] + w.count} joints; max {2 * (att.qty or 1)}")
+        if w.sides not in (1, 2):
+            why.append(f"sides {w.sides} must be 1 or 2")
+        run = weld_length_mm(w.edge, att, base) if att is not None else None
+        if att is not None and not run:
+            why.append(f"edge '{w.edge}' does not apply to {att.item_no} {att.section}")
+        if att is not None and not why:
+            # budget per (attached, base, edge): at most 2 joints per piece of the attached part
+            key = (w.attached, w.base, w.edge)
+            if w.count < 1 or used[key] + w.count > 2 * (att.qty or 1):
+                why.append(f"{w.attached} would have {used[key] + w.count} '{w.edge}' joints to {w.base}; "
+                           f"max {2 * (att.qty or 1)}")
             else:
-                used[att.item_no] += w.count
+                used[key] += w.count
         if why:
-            rejected.append(f"{'+'.join(w.parts)} {w.size_mm:g}mm: {'; '.join(why)}")
+            rejected.append(f"{w.attached}->{w.base} {w.edge} {w.size_mm:g}mm: {'; '.join(why)}")
             continue
-        total_m = w.length_mm * w.count * inv.assembly_qty / 1000
-        metal = total_m * (w.size_mm ** 2 / 2) * 1e-6 * STEEL_KG_M3
-        inv.welds.append(WeldLine(parts=w.parts, size_mm=w.size_mm, length_mm=w.length_mm, count=w.count,
-                                  evidence=w.evidence, total_length_m=round(total_m, 3), weld_metal_kg=round(metal, 3)))
+        length = run * w.sides
+        total_m = length * w.count * inv.assembly_qty / 1000
+        metal = 0.0 if w.tack else total_m * (w.size_mm ** 2 / 2) * 1e-6 * STEEL_KG_M3
+        inv.welds.append(WeldLine(parts=[w.attached, w.base], size_mm=w.size_mm, length_mm=round(length, 1),
+                                  count=w.count, edge=w.edge, sides=w.sides, tack=w.tack, evidence=w.evidence,
+                                  total_length_m=round(total_m, 3), weld_metal_kg=round(metal, 3)))
     inv.rejected_welds = rejected
     inv.weld_metal_kg = round(sum(w.weld_metal_kg for w in inv.welds), 2)
     inv.electrode_kg = round(inv.weld_metal_kg * ELECTRODE_PER_WELD_METAL, 2)
-    inv.checks.append(Check(id="inventory.welds", level="warn" if rejected else "pass", region="inventory",
-                            message=(f"{len(inv.welds)} weld runs accepted (estimates)"
-                                     + (f"; {len(rejected)} rejected: " + " | ".join(rejected[:8]) if rejected else ""))))
+    _set_check(inv, Check(id="inventory.welds", level="warn" if rejected else "pass", region="inventory",
+                          message=(f"{len(inv.welds)} weld runs accepted"
+                                   + (f"; {len(rejected)} rejected: " + " | ".join(rejected[:8]) if rejected else ""))))
     share = inv.weld_metal_kg / inv.total_steel_kg if inv.total_steel_kg else 0
-    seams = [s for p in inv.plates for s in p.sources if "(WH " in s or "(T " in s]
-    inv.checks.append(Check(
-        id="inventory.weld_coverage", level="pass" if share >= 0.005 else "warn", region="inventory",
-        message=f"Weld metal {inv.weld_metal_kg} kg = {share:.2%} of steel weight (fabricated steel is typically "
-                "1-2%). The estimate covers only welds drawn with symbols in the views"
-                + ("; flange-to-web seams of built-up members are not drawn and not included" if seams else "")
-                + "."))
+    seams = any("(WH " in s or "(T " in s for p in inv.plates for s in p.sources)
+    _set_check(inv, Check(
+        id="inventory.weld_estimate", level="warn", region="inventory",
+        message=f"Weld metal {inv.weld_metal_kg} kg ({share:.2%} of steel; fabricated steel is typically 1-2%) is a "
+                "model-read estimate, unverified: topology read by OpenAI, lengths computed from the BOM, tack welds "
+                "excluded" + ("; flange-to-web seams of built-up members are not drawn and not included" if seams
+                              else "") + "."))
 ```
 
 - [ ] **Step 4: Run to verify pass**
 
 Run: `python -m pytest tests/test_sections.py tests/test_inventory.py -q`
-Expected: `31 passed`.
+Expected: `36 passed`.
 
 - [ ] **Step 5: Commit**
 
@@ -2917,7 +3092,9 @@ INSTRUCTIONS = """You are a structural-steel fabrication drawing analyst answeri
 4. If the sheet does not contain the answer, say so plainly. Label visual inferences as "from the drawing view".
 5. Units: lengths mm, levels m, weights kg unless the sheet says otherwise. Show arithmetic when you compute.
 6. Copy marks, grid locations, levels, sections and specifications exactly as written on the sheet
-   (e.g. '19-20/<LEG-1' stays as is); never add or normalise characters."""
+   (e.g. '19-20/<LEG-1' stays as is); never add or normalise characters.
+7. Before quoting a dimension from a view, zoom in and say which two features its extension lines span;
+   if you cannot tell, say the dimension is ambiguous rather than guessing."""
 
 REGION_NAMES = ["bom", "abstract", "bolts", "title_block", "notes", "mark_location", "revisions"]
 
@@ -3169,8 +3346,8 @@ def inventory_frames(inv) -> dict:
         ("Plates (kg)", round(sum(p.weight_kg for p in inv.plates), 2)),
         ("Sections (kg)", round(sum(s.weight_kg for s in inv.sections), 2)),
         ("Paint area (m2)", inv.paint_area_m2),
-        ("Weld metal (kg, estimate)", inv.weld_metal_kg),
-        ("Electrode (kg, estimate)", inv.electrode_kg),
+        ("Weld metal (kg, model-read estimate, unverified)", inv.weld_metal_kg),
+        ("Electrode (kg, model-read estimate, unverified)", inv.electrode_kg),
         ("OpenAI model", inv.model or "not run"),
     ]
     return {
@@ -3422,14 +3599,15 @@ with tab_checks:
                                for c in x.checks]), width="stretch", hide_index=True)
 
 with tab_inv:
-    st.caption(f"Assembly {inv.assembly_mark} × {inv.assembly_qty} · quantities net as drawn · "
+    st.caption(f"Assembly {inv.assembly_mark} × {inv.assembly_qty} · Tekla gross (stock) weights, no wastage · "
                f"steel {inv.total_steel_kg} kg · paint {inv.paint_area_m2} m²")
     if use_llm:
         label = "Re-run OpenAI step" if key in ss.inventories else "Run OpenAI step (welds, unknown sections)"
         if st.button(label):
             with st.spinner("Reading welds and unknown sections from the sheet…"):
                 ss.inventories[key] = build_inventory(x, page, PageLayout.from_page(page), ss.llm, model,
-                                                      None if deep else settings.deep_model)
+                                                      None if deep else settings.deep_model,
+                                                      cache_dir=settings.cache_dir)
             for k, chat in ss.chats.items():
                 if k[:2] == key:
                     chat.set_inventory(ss.inventories[key])
@@ -3444,13 +3622,14 @@ with tab_inv:
     st.dataframe(pd.DataFrame([{**s.model_dump(), "sources": ", ".join(s.sources)} for s in inv.sections]),
                  width="stretch", hide_index=True)
     if inv.fasteners:
-        st.subheader("Fasteners (as listed in the bolt table)")
+        st.subheader(f"Fasteners (as listed in the bolt table; not multiplied by assembly qty × {inv.assembly_qty})")
         st.dataframe(pd.DataFrame([f.model_dump() for f in inv.fasteners]), width="stretch", hide_index=True)
     if inv.unclassified:
         st.subheader("Needs review")
         st.dataframe(pd.DataFrame([u.model_dump() for u in inv.unclassified]), width="stretch", hide_index=True)
     if inv.welds or inv.rejected_welds:
-        st.subheader(f"Welds (estimates) — weld metal {inv.weld_metal_kg} kg, electrode {inv.electrode_kg} kg")
+        st.subheader(f"Welds: model-read estimate, unverified — weld metal {inv.weld_metal_kg} kg, "
+                     f"electrode {inv.electrode_kg} kg")
         st.dataframe(pd.DataFrame([{**w.model_dump(), "parts": " + ".join(w.parts)} for w in inv.welds]),
                      width="stretch", hide_index=True)
         if inv.rejected_welds:
@@ -3597,7 +3776,7 @@ if __name__ == "__main__":
 - [ ] **Step 4: Run the full offline suite**
 
 Run: `python -m pytest -q`
-Expected: `122 passed` (about 50 s).
+Expected: `127 passed` (about 50 s).
 
 - [ ] **Step 5: Live smoke run (real API, about 100–200k input tokens on an A0 sheet, mostly cached)**
 
@@ -3628,8 +3807,9 @@ git commit -m "feat: Streamlit UI with inventory tab, README and live smoke scri
 
 ## Known limitations (accepted)
 
-- **Weld estimates cover only welds drawn with symbols.** Built-up flange-to-web seams aren't drawn, so large built-up sheets under-report weld metal; `inventory.weld_coverage` says so.
-- **The unknown `SPD508*508*608*608*8` (16362) may stay "needs review".** Live, both gpt-5.4-mini and gpt-5.5 proposed breakdowns that failed the 2% weight check (19.32 kg vs 54.93 kg), so it stays listed as a section with the model's description.
+- **Weld estimates cover only welds drawn with symbols, and they are unverified.** The topology comes from the model; lengths come from BOM geometry, where the edge choice approximates the true joint. Built-up flange-to-web seams aren't drawn, so large built-up sheets under-report weld metal; `inventory.weld_estimate` says so.
+- **The unknown `SPD508*508*608*608*8` (16362) sometimes stays "needs review".** gpt-5.4-mini has not produced a valid breakdown. gpt-5.5 did in the latest live run and failed in an earlier one, and an invalid breakdown is always rejected.
+- **Weights and fasteners.** Weights are Tekla gross (stock) weights. Fasteners are not multiplied by assembly qty; the UI says so.
 - **Fastener quantities are taken as the bolt table lists them** (not multiplied by assembly qty). Blank taper-washer quantities are warned about, not guessed.
 - **Cost.** Chat on A0 costs about 40k input tokens per API call (mostly cached after the first), and 20 s latency is typical. The inventory OpenAI step costs about 16–39k input tokens, plus the same again when it escalates to gpt-5.5.
 - **Template.** The parsers are tuned to the TATA STEEL template; on another template the extract checks will report missing regions.
@@ -3649,3 +3829,20 @@ Every fix carries into v2: error isolation, erection-location rows, the cross-ch
 - Extraction becomes 100% PyMuPDF: the v1 OpenAI title-block and view steps, and their escalation machinery, are removed. The title block is now read from bordered cells.
 - New inventory mode.
 - v2 is audited below.
+
+**v2 audit (same auditor, rebuilt into a fresh directory): APPROVE WITH CHANGES.**
+- The rebuild gave 122 passed with every task count exact.
+- The deterministic side matched the auditor's own code and the images on all 5 sheets: title block, and inventory plates, sections, fasteners and paint (WH/T recipes worst 0.002%).
+- Findings, and how each is resolved in this revision:
+
+| # | Finding | Resolution |
+|---|---|---|
+| M1 | Accepted weld lengths were copied view dimensions or part lengths; welds joining 3 parts were accepted; tack-weld notes were ignored | The model gives topology only (attached, base, edge, sides) and code computes lengths from BOM geometry; 2-part schema; `tack` field → 0 weld metal; output labelled "model-read estimate, unverified" |
+| M2 | `allowed_weld_sizes` matched the bolt table's "TYPE" and nearby dimensions, and missed "4/4 CONT." | Exact `TYP.`/`CONT.` on the same row, table regions excluded, `a/b` sizes parsed; tests: 09970 == {6}, 16362 ⊇ {4, 6} |
+| M3 | An unknown section accepted a wrong-thickness plate of the right weight | The plate thickness must appear in the section name; test |
+| M4 | `_score` rewarded more accepted welds; no escalation when mini failed | Per-part merge (unknowns by resolution, welds by rejection rate, count not rewarded); escalates when mini fails; tests |
+| m1 | The joint budget rejected real double-edge welds | Budget per (attached, base, edge) |
+| m2 | `inventory.taper_qty` was duplicated | `_set_check` replaces by id; test that no id repeats |
+| m3 | Wording ("net as drawn" over gross weights; fasteners vs qty) | "Tekla gross (stock) weights, no wastage"; fasteners labelled "not multiplied by assembly qty" |
+| m4 | The OpenAI inventory was lost on reload | Disk cache keyed by (sha, page, schema, models); test |
+| n1 | Chat misread a view dimension | Prompt rule 7: zoom, and name the features a dimension spans, or call it ambiguous |
