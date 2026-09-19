@@ -198,10 +198,36 @@ class InventoryItem(BaseModel):
     note: str = ""
 
 
+class BoqRow(BaseModel):
+    """One row of the fabrication BOQ, in the layout of the user's reference BOQ (2GU1 BOQ.xlsx)."""
+    drawing_no: str
+    item_type: str                                         # e.g. GUTTER (from "DETAIL OF GUTTER MKD AS -2GU1")
+    mark_no: str                                           # assembly mark
+    item_no: str                                           # part mark (built-ups: "3m471 flange" / "3m471 web")
+    section: str                                           # plates: "PL6"; rolled: "ISMC150"
+    width: Optional[float] = None                          # plates only (mm)
+    length: Optional[float] = None                         # mm
+    qty: int                                               # per assembly
+    fab_qty: int                                           # assemblies to fabricate
+    total_qty: int
+    unit_wt: Optional[float] = None                        # kg/m² for plates, kg/m for rolled sections
+    unit_wt_basis: str = ""                                # "kg/m2" | "kg/m"
+    calc_wt: Optional[float] = None                        # per assembly
+    total_calc_wt: Optional[float] = None
+    drg_wt: Optional[float] = None                         # Tekla gross weight of the row, per assembly
+    total_drg_wt: Optional[float] = None
+    difference: Optional[float] = None                     # total_calc_wt - total_drg_wt
+    grade: str = ""
+    unit_wt_source: str = ""                               # 7.85 x t | IS 808 table | computed | OpenAI ... | drawing
+    note: str = ""
+
+
 class Inventory(BaseModel):
     drawing_no: str
     assembly_mark: str
     assembly_qty: int
+    item_type: str = ""
+    boq: list[BoqRow] = Field(default_factory=list)
     plates: list[PlateLine] = Field(default_factory=list)
     sections: list[SectionLine] = Field(default_factory=list)
     fasteners: list[FastenerLine] = Field(default_factory=list)

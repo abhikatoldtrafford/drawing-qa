@@ -20,11 +20,12 @@ from typing import Literal
 
 from pydantic import BaseModel
 
+from .boq import build_boq, item_type, missing_unit_weights
 from .config import SCHEMA_VERSION
 from .context import page_context
 from .geometry import num, xc, yc
 from .models import Check, FastenerLine, Inventory, InventoryItem, PlateLine, SectionLine, WeldLine
-from .sections import STEEL_KG_M3, Plate, decompose, parse_section, weight_matches
+from .sections import STEEL_KG_M3, Plate, decompose, develop_cone, parse_section, weight_matches
 
 FILLET_SIZES = {3, 4, 5, 6, 8, 10, 12, 14, 16, 18, 20, 22, 25}
 ELECTRODE_PER_WELD_METAL = 1 / 0.6          # ~60 % deposition efficiency for manual metal arc (estimate)
@@ -55,9 +56,15 @@ class WeldLLM(BaseModel):
     evidence: str
 
 
+class UnitWeightLLM(BaseModel):
+    section: str
+    kg_per_m: float
+
+
 class InventoryLLM(BaseModel):
     unknown_sections: list[UnknownSectionLLM]
     welds: list[WeldLLM]
+    unit_weights: list[UnitWeightLLM]
 
 
 INSTRUCTIONS = """You assist a steel fabrication estimator. You get one drawing sheet (full text layer tagged with grid
@@ -75,7 +82,10 @@ cells, and images of the whole sheet), its validated bill of materials, and a li
    count = how many such joints per assembly (e.g. 'TYP.' on a part with qty 4 -> 4);
    tack = true only if the drawing says the part is tack welded;
    evidence = view label and/or grid cell where you read it.
-   Do not give lengths: they are computed from the bill of materials. Do not invent welds you cannot see."""
+   Do not give lengths: they are computed from the bill of materials. Do not invent welds you cannot see.
+3. unit_weights: for each MISSING rolled section listed, its IS 808 handbook weight per metre in kg/m for
+   that exact designation. Omit a section if you do not know the handbook value; never estimate from the
+   drawing."""
 
 
 def _asm_qty(x):
@@ -157,17 +167,20 @@ def deterministic_inventory(x) -> Inventory:
             add_plate(ps.thickness_mm, p.material, q, ps.width_mm * (p.length_mm or 0) * q / 1e6,
                       (p.gross_kg or 0) * q_asm, p.item_no)
             continue
-        if ps.family == "built_up":
-            pls = decompose(ps, p.length_mm or 0)
+        if ps.family in ("built_up", "cone"):
+            pls = decompose(ps, p.length_mm or 0) if ps.family == "built_up" else [develop_cone(ps, p.length_mm or 0)]
             if weight_matches(pls, p.pc_wt, (p.net_kg or 0) / (p.qty or 1)):
-                for pl in pls:
-                    add_plate(pl.thickness_mm, p.material, pl.count * q, pl.area_m2 * q, pl.weight_kg * q,
-                              f"{p.item_no} ({ps.kind} {pl.width_mm:g}x{pl.thickness_mm:g})")
+                kind = ps.kind if ps.family == "built_up" else "cone"
+                share = sum(pl.weight_kg for pl in pls) or 1.0
+                for pl in pls:                        # drawing (gross) weight shared by plate weight, as in the BOQ
+                    add_plate(pl.thickness_mm, p.material, pl.count * q, pl.area_m2 * q,
+                              (p.gross_kg or 0) * q_asm * pl.weight_kg / share,
+                              f"{p.item_no} ({kind} {pl.width_mm:g}x{pl.thickness_mm:g})")
                 continue
             inv.checks.append(Check(id=f"inventory.decompose.{p.item_no}", level="warn", region="inventory",
                                     message=f"{p.item_no} {p.section}: plate recipe does not match BOM weight; "
                                             "kept as a section."))
-        family = "built-up" if ps.family == "built_up" else ("other" if ps.family == "unknown" else ps.family)
+        family = {"built_up": "built-up", "unknown": "other"}.get(ps.family, ps.family)
         sl = sections.setdefault((ps.profile, p.material), SectionLine(profile=ps.profile, family=family,
                                                                        grade=p.material, pieces=0,
                                                                        total_length_m=0, weight_kg=0))
@@ -187,8 +200,33 @@ def deterministic_inventory(x) -> Inventory:
     inv.fasteners = fasteners(x.bolts)
     inv.total_steel_kg = b.totals.gross_kg or 0.0
     inv.paint_area_m2 = b.totals.surface_area_m2
+    inv.item_type = item_type(x)
+    inv.boq = build_boq(x)
     _steel_checks(inv, x)
+    _boq_checks(inv)
     return inv
+
+
+def _boq_checks(inv):
+    rows = inv.boq
+    drg = sum(r.total_drg_wt or 0 for r in rows)
+    ok = abs(drg - inv.total_steel_kg) <= max(0.1, 0.005 * inv.total_steel_kg)
+    _set_check(inv, Check(id="boq.drawing_weight", level="pass" if ok else "fail", region="inventory",
+                          message=f"BOQ total drawing weight {drg:.2f} kg; BOM gross total {inv.total_steel_kg} kg."))
+    calc = sum(r.total_calc_wt or 0 for r in rows)
+    missing = [r.item_no for r in rows if r.total_calc_wt is None]
+    far = [f"{r.item_no} {r.section}: {r.difference:+.2f} kg" for r in rows
+           if r.difference is not None and r.total_drg_wt and abs(r.difference) > 0.05 * r.total_drg_wt]
+    drawing_uw = [r.item_no for r in rows if r.unit_wt_source.startswith("drawing")]
+    level = "warn" if (missing or far or drawing_uw) else "pass"
+    msg = f"BOQ calculated {calc:.2f} kg vs drawing {drg:.2f} kg ({calc - drg:+.2f} kg)."
+    if far:
+        msg += f" Rows off by >5%: {far}."
+    if missing:
+        msg += f" No unit weight: {missing}."
+    if drawing_uw:
+        msg += f" Unit weight taken from the drawing (no handbook value): {drawing_uw}."
+    _set_check(inv, Check(id="boq.calculated", level=level, region="inventory", message=msg))
 
 
 def fasteners(bolts) -> list[FastenerLine]:
@@ -258,12 +296,13 @@ def _cache_file(cache_dir, x, model, deep_model):
 
 def _ask(x, page, layout, llm, model, unknown):
     """One structured OpenAI call with the whole page. Returns (InventoryLLM, None) or (None, error text)."""
-    bom_txt = "\n".join(f"{p.item_no} | {p.section} | L={p.length_mm} | qty={p.qty} | pc_wt={p.pc_wt} | {p.material}"
-                        for p in x.bom.parts)
+    bom_txt = "\n".join(f"{p.item_no} | {p.section} | L={p.length_mm} | qty={p.qty} | {p.material}"
+                        for p in x.bom.parts)          # no weights: code checks breakdowns against them
     asm = x.bom.assembly
+    missing = sorted(missing_unit_weights(x))
     text = (f"ASSEMBLY {asm.erection_mark if asm else ''} x {asm.qty if asm and asm.qty else 1}\n"
-            f"BOM (mark | section | length mm | qty | piece kg | grade):\n{bom_txt}\nNOTES:\n" + "\n".join(x.notes)
-            + f"\nUNKNOWN sections: {unknown or 'none'}")
+            f"BOM (mark | section | length mm | qty | grade):\n{bom_txt}\nNOTES:\n" + "\n".join(x.notes)
+            + f"\nUNKNOWN sections: {unknown or 'none'}\nMISSING unit weights: {missing or 'none'}")
     try:
         content = page_context(page, layout) + [{"type": "input_text", "text": text}]
         return llm.parse_content(model, INSTRUCTIONS, content, InventoryLLM), None
@@ -271,12 +310,17 @@ def _ask(x, page, layout, llm, model, unknown):
         return None, f"{model}: {type(e).__name__}: {e}"
 
 
-def _assemble(x, layout, unknown_answers, welds, model_label, errors) -> Inventory:
+def _assemble(x, layout, unknown_answers, welds, model_label, errors, unit_weights=None) -> Inventory:
     inv = deterministic_inventory(x)
     inv.model = model_label
     rows = {p.item_no: p for p in x.bom.parts}
+    breakdowns = {}
     if unknown_answers is not None:
-        _apply_unknown(inv, unknown_answers, rows, [u.mark for u in inv.unclassified])
+        breakdowns = _apply_unknown(inv, unknown_answers, rows, [u.mark for u in inv.unclassified])
+    accepted_uw = _apply_unit_weights(inv, unit_weights or [], missing_unit_weights(x))
+    if breakdowns or accepted_uw:
+        inv.boq = build_boq(x, accepted_uw, breakdowns)
+        _boq_checks(inv)
     if welds is not None:
         _apply_welds(inv, welds, rows, allowed_weld_sizes(layout, x.notes, x.regions.values()))
     if errors and unknown_answers is None and welds is None:
@@ -300,7 +344,8 @@ def build_inventory(x, page, layout, llm=None, model="gpt-5.4-mini", deep_model=
     unknown = [u.mark for u in deterministic_inventory(x).unclassified]
     out, err = _ask(x, page, layout, llm, model, unknown)
     errors = [err] if err else []
-    inv = _assemble(x, layout, out.unknown_sections if out else None, out.welds if out else None, model, errors)
+    inv = _assemble(x, layout, out.unknown_sections if out else None, out.welds if out else None, model, errors,
+                    out.unit_weights if out else None)
     if deep_model and deep_model != model and _needs_escalation(inv):
         deep, derr = _ask(x, page, layout, llm, deep_model, unknown)
         if derr:
@@ -308,12 +353,13 @@ def build_inventory(x, page, layout, llm=None, model="gpt-5.4-mini", deep_model=
         runs = [(model, out), (deep_model, deep)]
         runs = [(m, o) for m, o in runs if o is not None]
         if runs:
-            trial = {m: _assemble(x, layout, o.unknown_sections, o.welds, m, []) for m, o in runs}
+            trial = {m: _assemble(x, layout, o.unknown_sections, o.welds, m, [], o.unit_weights) for m, o in runs}
             u_m = max(trial, key=lambda m: sum(u.accepted for u in trial[m].unclassified))        # first wins ties
             w_m = min(trial, key=lambda m: _rejection_rate(trial[m]))
             label = u_m if u_m == w_m else f"{u_m} (sections) + {w_m} (welds)"
             src = dict(runs)
-            inv = _assemble(x, layout, src[u_m].unknown_sections, src[w_m].welds, label, errors)
+            inv = _assemble(x, layout, src[u_m].unknown_sections, src[w_m].welds, label, errors,
+                            src[u_m].unit_weights)
     after = llm.usage_summary()
     inv.usage = {f"{m}:{k}": v - before.get(m, {}).get(k, 0) for m, u in after.items() for k, v in u.items()
                  if v - before.get(m, {}).get(k, 0)}
@@ -329,7 +375,25 @@ def _mark(s, known):
     return head if head in known else s.strip()
 
 
+def _apply_unit_weights(inv, answers, missing) -> dict:
+    """Use an OpenAI handbook unit weight for a rolled designation missing from the table. It is NOT accepted by
+    agreement with the drawing (that would be circular: coped or notched parts differ legitimately, and a value
+    copied from the drawing would pass); it is always shown as unverified, beside the drawing-implied kg/m."""
+    used = {}
+    for a in answers:
+        key = a.section.replace(" ", "").upper()
+        if key in missing and a.kg_per_m > 0:
+            used[key] = (a.kg_per_m, "OpenAI handbook value (unverified)")
+    if used:
+        shown = [f"{k}: {v[0]} kg/m (drawing {missing[k]:.2f} kg/m)" if missing[k] else f"{k}: {v[0]} kg/m"
+                 for k, v in used.items()]
+        _set_check(inv, Check(id="boq.unit_weights", level="warn", region="inventory",
+                              message=f"Unit weights from OpenAI, not in the handbook table; verify: {shown}"))
+    return used
+
+
 def _apply_unknown(inv, answers, rows, unknown):
+    accepted = {}
     by_mark = {_mark(a.mark, set(unknown)): a for a in answers if _mark(a.mark, set(unknown)) in unknown}
     for item in inv.unclassified:
         a = by_mark.get(item.mark)
@@ -345,6 +409,7 @@ def _apply_unknown(inv, answers, rows, unknown):
             item.accepted = True
             item.note = "plate breakdown matches BOM weight (±2%) and the thickness in the section name"
             _move_to_plates(inv, p, pls, (p.qty or 0) * inv.assembly_qty)
+            accepted[item.mark] = pls
         elif wrong_t:
             item.note = f"plate thickness {wrong_t} is not in the section name {p.section}: rejected"
         else:
@@ -355,6 +420,7 @@ def _apply_unknown(inv, answers, rows, unknown):
     _set_check(inv, Check(id="inventory.unclassified", level="warn" if pending else "pass", region="inventory",
                           message=f"Sections needing review: {pending}" if pending else
                           "Every BOM member is classified."))
+    return accepted
 
 
 def _move_to_plates(inv, p, pls, q):

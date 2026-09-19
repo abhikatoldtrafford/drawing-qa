@@ -63,6 +63,32 @@ def inventory_frames(inv) -> dict:
     }
 
 
+BOQ_HEADERS = ["DRAWING NO", "ITEM TYPE", "MARK NO", "ITEMNO", "SECTION", "WIDTH", "LENGTH", "QTY", "FAB QTY",
+               "TOTAL QTY", "UNIT WT", " CALCULATED WT", "TOTAL CALCULATED WT", "WT", "TOTAL DRG WT", "DIFFRENCE",
+               "GRADE", "UNIT WT SOURCE", "NOTE"]           # spelling as in the reference BOQ (2GU1 BOQ.xlsx)
+
+
+def write_boq_sheet(ws, rows):
+    """BOQ with live formulas in the reference layout: row 1 SUBTOTALs, row 2 headers, data from row 3."""
+    for col in "JLMNOP":                                  # open range, as in the reference: added rows count
+        ws[f"{col}1"] = f"=SUBTOTAL(9,{col}3:{col}105848)"
+    ws.append(BOQ_HEADERS)
+    for i, r in enumerate(rows, start=3):
+        plate = r.unit_wt_basis == "kg/m2"
+        thk = r.section[2:] if plate else ""
+        ws.append([
+            r.drawing_no, r.item_type, r.mark_no, r.item_no, r.section, r.width if plate else None, r.length,
+            r.qty, r.fab_qty, f"=H{i}*I{i}",
+            (f"=7.85*{thk}" if plate else r.unit_wt),
+            (f"=(F{i}/1000)*(G{i}/1000)*H{i}*K{i}" if plate else f"=(G{i}/1000)*H{i}*K{i}")
+            if r.unit_wt is not None else None,
+            f"=L{i}*I{i}" if r.unit_wt is not None else None,
+            None if r.drg_wt is None else round(r.drg_wt, 4), f"=N{i}*I{i}",
+            f"=M{i}-O{i}" if r.difference is not None else None,
+            r.grade, r.unit_wt_source, r.note,
+        ])
+
+
 def to_json(x) -> str:
     return x.model_dump_json(indent=2)
 
@@ -72,9 +98,24 @@ def bom_csv(x) -> str:
 
 
 def to_excel(x, inventory=None) -> bytes:
+    """Extract sheets; with an inventory, a 'BOQ' sheet (first, live formulas) plus the inventory summaries."""
     frames = _frames(x) | (inventory_frames(inventory) if inventory is not None else {})
     buf = io.BytesIO()
     with pd.ExcelWriter(buf, engine="openpyxl") as w:
+        if inventory is not None:
+            write_boq_sheet(w.book.create_sheet("BOQ", 0), inventory.boq)
         for name, df in frames.items():
             df.to_excel(w, sheet_name=name, index=False)
+    return buf.getvalue()
+
+
+def boq_excel(inventory) -> bytes:
+    """Just the BOQ sheet, in the reference layout."""
+    import openpyxl
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "BOQ"
+    write_boq_sheet(ws, inventory.boq)
+    buf = io.BytesIO()
+    wb.save(buf)
     return buf.getvalue()

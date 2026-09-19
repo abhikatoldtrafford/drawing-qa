@@ -35,7 +35,10 @@ def test_assembly_qty_multiplies_pieces_16362(settings):
     inv = deterministic_inventory(det("16362", settings))
     rod = next(s for s in inv.sections if s.profile == "ROD8")
     assert (rod.pieces, rod.total_length_m) == (44, 26.752)       # 22 per assembly x 2 assemblies
-    assert [u.mark for u in inv.unclassified] == ["1m470"]
+    assert inv.unclassified == []                                   # the SPD cone is developed by code
+    pl8 = next(p for p in inv.plates if p.thickness_mm == 8)
+    assert pl8.pieces == 2 and pl8.weight_kg == pytest.approx(2 * 54.93, abs=0.01)
+    assert pl8.sources == ["1m470 (cone 1727.9x8)"]
 
 
 def test_fasteners_from_bolt_table_09970(settings):
@@ -52,8 +55,9 @@ def test_allowed_weld_sizes_come_from_weld_callouts_only(layouts, settings):
     assert {4.0, 6.0} <= allowed_weld_sizes(layouts("16362"), x.notes, x.regions.values())   # '4/4 CONT.' welds
 
 
-def _llm_answer(unknown=(), welds=()):
-    return lambda model, schema: InventoryLLM(unknown_sections=list(unknown), welds=list(welds))
+def _llm_answer(unknown=(), welds=(), unit_weights=()):
+    return lambda model, schema: InventoryLLM(unknown_sections=list(unknown), welds=list(welds),
+                                              unit_weights=list(unit_weights))
 
 
 def _weld(attached, base, edge, size=6, sides=1, count=1, tack=False, evidence=""):
@@ -61,13 +65,26 @@ def _weld(attached, base, edge, size=6, sides=1, count=1, tack=False, evidence="
             "tack": tack, "evidence": evidence}
 
 
-def _run(drg, settings, fn, deep_model=None, cache_dir=None):
+def _run(drg, settings, fn, deep_model=None, cache_dir=None, mutate=None):
     p = sample_path(drg)
     page = pymupdf.open(p)[0]
     client = FakeClient(parse_fn=fn)
-    inv = build_inventory(det(drg, settings), page, PageLayout.from_page(page), LLM(client), "mini", deep_model,
+    x = det(drg, settings)
+    if mutate:
+        mutate(x)
+    inv = build_inventory(x, page, PageLayout.from_page(page), LLM(client), "mini", deep_model,
                           cache_dir=cache_dir)
     return inv, client
+
+
+def _transition(x):
+    """Make 16362's SPD member a non-circular transition, which code cannot develop (an 'unknown' section)."""
+    next(p for p in x.bom.parts if p.item_no == "1m470").section = "SPD508*400*608*300*8"
+
+
+def _untabulated_channel(x):
+    """Make 1m471 an ISMC160, a rolled designation missing from the handbook table."""
+    next(p for p in x.bom.parts if p.item_no == "1m471").section = "ISMC160"
 
 
 def test_weld_lengths_come_from_bom_geometry_not_the_model(settings):
@@ -110,24 +127,24 @@ def test_tack_welds_carry_no_weld_metal(settings):
 def test_unknown_section_breakdown_needs_matching_weight_and_thickness(settings):
     good = {"mark": "1m470", "description": "cone developed plate", "plates": [
         {"thickness_mm": 8, "width_mm": 1729, "length_mm": 506, "count": 1}]}             # 54.94 kg vs 54.93
-    inv, _ = _run("16362", settings, _llm_answer(unknown=[good]))
-    assert inv.unclassified[0].accepted and "SPD508*508*608*608*8" not in {s.profile for s in inv.sections}
+    inv, _ = _run("16362", settings, _llm_answer(unknown=[good]), mutate=_transition)
+    assert inv.unclassified[0].accepted and "SPD508*400*608*300*8" not in {s.profile for s in inv.sections}
     assert {c.id: c.level for c in inv.checks}["inventory.weight"] == "pass"
     thick = {**good, "plates": [{"thickness_mm": 12, "width_mm": 1153, "length_mm": 506, "count": 1}]}   # same kg
-    inv, _ = _run("16362", settings, _llm_answer(unknown=[thick]))
+    inv, _ = _run("16362", settings, _llm_answer(unknown=[thick]), mutate=_transition)
     assert not inv.unclassified[0].accepted and "not in the section name" in inv.unclassified[0].note
     light = {**good, "plates": [{"thickness_mm": 8, "width_mm": 600, "length_mm": 506, "count": 1}]}
-    inv, _ = _run("16362", settings, _llm_answer(unknown=[light]))
-    assert not inv.unclassified[0].accepted and "SPD508*508*608*608*8" in {s.profile for s in inv.sections}
+    inv, _ = _run("16362", settings, _llm_answer(unknown=[light]), mutate=_transition)
+    assert not inv.unclassified[0].accepted and "SPD508*400*608*300*8" in {s.profile for s in inv.sections}
 
 
 def test_escalation_prefers_resolved_unknowns_not_more_welds(settings):
     good = {"mark": "1m470", "description": "cone", "plates": [
         {"thickness_mm": 8, "width_mm": 1729, "length_mm": 506, "count": 1}]}
     many = [_weld("1p375", "1DC1", "length", count=2), _weld("1m471", "1DC1", "length")]
-    fn = lambda model, schema: (InventoryLLM(unknown_sections=[good], welds=[]) if model == "deep"
-                                else InventoryLLM(unknown_sections=[], welds=many))
-    inv, client = _run("16362", settings, fn, deep_model="deep")
+    fn = lambda model, schema: (InventoryLLM(unknown_sections=[good], welds=[], unit_weights=[]) if model == "deep"
+                                else InventoryLLM(unknown_sections=[], welds=many, unit_weights=[]))
+    inv, client = _run("16362", settings, fn, deep_model="deep", mutate=_transition)
     assert [m for m, _, _ in client.responses.parse_calls] == ["mini", "deep"]
     assert inv.unclassified[0].accepted                                # sections from the run that resolved them
     assert [w.parts for w in inv.welds] == [["1p375", "1DC1"], ["1m471", "1DC1"]]   # welds kept from mini
@@ -138,17 +155,16 @@ def test_descriptive_part_names_are_reduced_to_marks(settings):
     good = {"mark": "1m470 conical reducer", "description": "cone", "plates": [
         {"thickness_mm": 8, "width_mm": 1729, "length_mm": 506, "count": 1}]}
     welds = [_weld("1DC1 pipe", "1m470 conical reducer", "circumference")]
-    inv, _ = _run("16362", settings, _llm_answer(unknown=[good], welds=welds))
+    inv, _ = _run("16362", settings, _llm_answer(unknown=[good], welds=welds), mutate=_transition)
     assert inv.unclassified[0].accepted
     assert inv.welds and inv.welds[0].parts == ["1DC1", "1m470"] and inv.rejected_welds == []
-    assert inv.welds[0].length_mm == round(math.pi * 508, 1)          # smaller circular diameter of the joint
 
 
 def test_escalates_when_the_mini_call_fails(settings):
     def fn(model, schema):
         if model == "mini":
             raise RuntimeError("timeout")
-        return InventoryLLM(unknown_sections=[], welds=[])
+        return InventoryLLM(unknown_sections=[], welds=[], unit_weights=[])
     inv, client = _run("09970", settings, fn, deep_model="deep")
     assert [m for m, _, _ in client.responses.parse_calls] == ["mini", "deep"] and inv.model == "deep"
     assert not any(c.id == "inventory.llm" for c in inv.checks)
@@ -185,3 +201,33 @@ def test_request_carries_full_page_context(settings):
     assert content[0]["text"].startswith("SHEET TEXT LAYER") and "[D8] A - A" in content[0]["text"]
     assert sum(c["type"] == "input_image" for c in content) == 4      # 2x2 tiles on an A1 sheet
     assert "UNKNOWN sections: none" in content[-1]["text"]
+
+
+def test_openai_unit_weight_is_used_but_always_flagged_unverified(settings):
+    # not accepted by agreement with the drawing (circular); shown beside the drawing's kg/m, always 'verify'
+    inv, client = _run("16362", settings, _llm_answer(unit_weights=[{"section": "ISMC160", "kg_per_m": 18.0}]),
+                       mutate=_untabulated_channel)
+    row = next(r for r in inv.boq if r.item_no == "1m471")
+    assert (row.unit_wt, row.unit_wt_source) == (18.0, "OpenAI handbook value (unverified)")
+    assert "drawing implies 16.45 kg/m" in row.note and row.difference == pytest.approx(2 * 0.8 * 18.0 - 26.32)
+    check = next(c for c in inv.checks if c.id == "boq.unit_weights")
+    assert check.level == "warn" and "verify" in check.message
+    prompt = client.responses.parse_calls[0][2][0]["content"][-1]["text"]
+    assert "MISSING unit weights: ['ISMC160']" in prompt and "pc_wt" not in prompt   # no weights to echo back
+
+
+def test_unit_weights_are_not_asked_or_used_for_unknown_families(settings):
+    inv, client = _run("16362", settings, _llm_answer(unit_weights=[{"section": "SPD508*400*608*300*8",
+                                                                    "kg_per_m": 108.56}]), mutate=_transition)
+    row = next(r for r in inv.boq if r.item_no == "1m470")
+    assert row.unit_wt_source.startswith("drawing") and row.difference is None     # never a 'handbook' echo
+    assert "MISSING unit weights: none" in client.responses.parse_calls[0][2][0]["content"][-1]["text"]
+
+
+def test_accepted_breakdown_turns_unknown_section_into_boq_plate_rows(settings):
+    good = {"mark": "1m470", "description": "cone", "plates": [
+        {"thickness_mm": 8, "width_mm": 1729, "length_mm": 506, "count": 1}]}
+    inv, _ = _run("16362", settings, _llm_answer(unknown=[good]), mutate=_transition)
+    row = next(r for r in inv.boq if r.item_no == "1m470 plate 1")
+    assert (row.section, row.width, row.length, row.qty, row.fab_qty) == ("PL8", 1729, 506, 1, 2)
+    assert {c.id: c.level for c in inv.checks}["boq.drawing_weight"] == "pass"

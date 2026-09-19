@@ -1,6 +1,6 @@
 # Drawing Q&A — Design (v2)
 
-**Date:** 2026-09-19 · **Status:** v1 audited in 3 rounds (APPROVE). v2 reflects the user's direction: OpenAI reads the whole page, extraction is PyMuPDF only, and there is a new inventory mode. v2 is pending audit.
+**Date:** 2026-09-19 · **Status:** v1 audited in 3 rounds (APPROVE); v2 audited (approve with changes, resolved); BOQ audited (approve with changes, resolved; see the addendum).
 
 ## Goal
 
@@ -71,3 +71,34 @@ PDF ─► PageLayout ─► parsers ─► run_checks ─► PageExtract (cache
 
 ## Out of scope
 OCR / scanned PDFs, cross-document questions and inventory, editing extracted data, multi-user deployment, image overlays, wastage allowances.
+
+## Addendum (2026-09-19): fabrication BOQ tuned to the user's ground truth
+
+The user supplied `2GU1 BOQ.xlsx` (for drawing 16807) as the expected inventory output. The Inventory mode's
+primary output is now that BOQ: one row per BOM part, the same columns, and live formulas with SUBTOTALs.
+- **Plates:** `PL<t>` + width, 7.85 × t kg/m² (`PLT` counts as a plate).
+- **Rolled sections:** IS 808 handbook kg/m, transcribed from a cited public table. The benchmark does not
+  use the reference's own values, which avoids a circular test; the table agrees with them anyway (ISMC150 16.8,
+  ISA75X75X8 8.9).
+- **Pipes and bars not in the table:** computed from geometry.
+- **Built-ups:** listed as their plates.
+- **Unknown sections:** an OpenAI breakdown when accepted; otherwise the drawing-implied kg/m, flagged.
+- **OpenAI unit weights** for untabulated sections are accepted only within ±5% of the drawing weight.
+- **Checks:** BOQ drawing weight = BOM gross; per-row differences over 5%, missing unit weights and
+  drawing-derived unit weights are flagged.
+- **Benchmark on 16807** (deterministic and OpenAI mode): 8/8 rows, 135/136 fields; the one difference is the
+  reference's grade typo `E2350A`. 0 formula differences, all subtotals equal.
+
+**BOQ audit (independent; approve with changes, all resolved):**
+- **Confirmed independently.** The auditor's own PyMuPDF-only BOQ gives 135/136, with the typo as the only
+  difference, and the exported formulas evaluate correctly on all 5 sheets.
+- **Unit weights (M1).** The OpenAI unit weight is no longer "accepted within ±5% of the drawing", which was
+  circular. It is requested only for rolled IS designations missing from the table, the prompt carries no piece
+  weights, and the value is always shown as unverified beside the drawing-implied kg/m.
+- **Cone (M2).** The SPD member is a circular cone, developed deterministically on the mean diameters into a PL t
+  plate row (16362: PL8 1727.9 × 508.5, +0.44% vs BOM). A drawing-derived unit weight leaves DIFFERENCE blank.
+- **Table and export.** ISA 150×150×15 is corrected to 33.8 (the source cell was truncated), with a geometric
+  screen test over the whole angle table. The SUBTOTAL range is open (row 105848), as in the reference. Pipe rows
+  note their mitre and hole cut-off.
+- **Benchmark.** It now also evaluates the exported workbook's formulas: 0 evaluated-cell differences from
+  the reference.
