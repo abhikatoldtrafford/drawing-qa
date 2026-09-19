@@ -22,6 +22,25 @@ Streamlit app for Tekla structural-steel fabrication drawings (vector PDF, TATA 
 
   Weld metal and electrode figures are estimates.
 
+- **Fabrication BOQ (Inventory tab, primary output):** one row per BOM part in the layout of the reference BOQ
+  (`2GU1 BOQ.xlsx`). The columns are drawing no, item type, mark, item, section, width, length, qty, fab qty,
+  total qty, unit weight, calculated weight, drawing weight, difference and grade.
+  - Plates use 7.85 × t kg/m². Rolled sections use IS 808 handbook kg/m (`drawing_qa/steel_tables.py`, source cited).
+  - Welded WH/T members are listed as their plates.
+  - OpenAI supplies unit weights for sections missing from the table, accepted only within ±5% of the drawing
+    weight, and breaks down unknown sections.
+  - Download the BOQ as Excel with live formulas and SUBTOTALs.
+
+  Benchmark against a reference workbook:
+
+      python scripts/benchmark_boq.py <drawing.pdf> <reference.xlsx> [--openai]
+
+  On 16807 against `2GU1 BOQ.xlsx`:
+  - 8/8 rows and 135/136 fields identical; the only difference is the reference's own grade typo (`E2350A`,
+    where the BOM says `E350A`);
+  - 0 formula differences;
+  - all SUBTOTALs equal.
+
 ## Run
 
     pip install -r requirements.txt

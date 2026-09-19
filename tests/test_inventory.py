@@ -52,8 +52,9 @@ def test_allowed_weld_sizes_come_from_weld_callouts_only(layouts, settings):
     assert {4.0, 6.0} <= allowed_weld_sizes(layouts("16362"), x.notes, x.regions.values())   # '4/4 CONT.' welds
 
 
-def _llm_answer(unknown=(), welds=()):
-    return lambda model, schema: InventoryLLM(unknown_sections=list(unknown), welds=list(welds))
+def _llm_answer(unknown=(), welds=(), unit_weights=()):
+    return lambda model, schema: InventoryLLM(unknown_sections=list(unknown), welds=list(welds),
+                                              unit_weights=list(unit_weights))
 
 
 def _weld(attached, base, edge, size=6, sides=1, count=1, tack=False, evidence=""):
@@ -125,8 +126,8 @@ def test_escalation_prefers_resolved_unknowns_not_more_welds(settings):
     good = {"mark": "1m470", "description": "cone", "plates": [
         {"thickness_mm": 8, "width_mm": 1729, "length_mm": 506, "count": 1}]}
     many = [_weld("1p375", "1DC1", "length", count=2), _weld("1m471", "1DC1", "length")]
-    fn = lambda model, schema: (InventoryLLM(unknown_sections=[good], welds=[]) if model == "deep"
-                                else InventoryLLM(unknown_sections=[], welds=many))
+    fn = lambda model, schema: (InventoryLLM(unknown_sections=[good], welds=[], unit_weights=[]) if model == "deep"
+                                else InventoryLLM(unknown_sections=[], welds=many, unit_weights=[]))
     inv, client = _run("16362", settings, fn, deep_model="deep")
     assert [m for m, _, _ in client.responses.parse_calls] == ["mini", "deep"]
     assert inv.unclassified[0].accepted                                # sections from the run that resolved them
@@ -148,7 +149,7 @@ def test_escalates_when_the_mini_call_fails(settings):
     def fn(model, schema):
         if model == "mini":
             raise RuntimeError("timeout")
-        return InventoryLLM(unknown_sections=[], welds=[])
+        return InventoryLLM(unknown_sections=[], welds=[], unit_weights=[])
     inv, client = _run("09970", settings, fn, deep_model="deep")
     assert [m for m, _, _ in client.responses.parse_calls] == ["mini", "deep"] and inv.model == "deep"
     assert not any(c.id == "inventory.llm" for c in inv.checks)
@@ -185,3 +186,23 @@ def test_request_carries_full_page_context(settings):
     assert content[0]["text"].startswith("SHEET TEXT LAYER") and "[D8] A - A" in content[0]["text"]
     assert sum(c["type"] == "input_image" for c in content) == 4      # 2x2 tiles on an A1 sheet
     assert "UNKNOWN sections: none" in content[-1]["text"]
+
+
+def test_openai_unit_weight_accepted_only_near_the_drawing_weight(settings):
+    ok = [{"section": "SPD508*508*608*608*8", "kg_per_m": 110.0}]          # drawing implies 108.56 kg/m
+    inv, _ = _run("16362", settings, _llm_answer(unit_weights=ok))
+    spd = next(r for r in inv.boq if r.item_no == "1m470")
+    assert spd.unit_wt == 110.0 and spd.unit_wt_source.startswith("OpenAI")
+    far = [{"section": "SPD508*508*608*608*8", "kg_per_m": 60.0}]
+    inv, _ = _run("16362", settings, _llm_answer(unit_weights=far))
+    assert next(r for r in inv.boq if r.item_no == "1m470").unit_wt_source.startswith("drawing")
+    assert {c.id: c.level for c in inv.checks}["boq.unit_weights"] == "warn"
+
+
+def test_accepted_breakdown_turns_unknown_section_into_boq_plate_rows(settings):
+    good = {"mark": "1m470", "description": "cone", "plates": [
+        {"thickness_mm": 8, "width_mm": 1729, "length_mm": 506, "count": 1}]}
+    inv, _ = _run("16362", settings, _llm_answer(unknown=[good]))
+    row = next(r for r in inv.boq if r.item_no == "1m470 plate 1")
+    assert (row.section, row.width, row.length, row.qty, row.fab_qty) == ("PL8", 1729, 506, 1, 2)
+    assert {c.id: c.level for c in inv.checks}["boq.drawing_weight"] == "pass"

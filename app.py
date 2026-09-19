@@ -144,6 +144,16 @@ with tab_inv:
     else:
         st.info("Plates, sections, fasteners and paint are computed from the extract. "
                 "Enable OpenAI for welds and unknown sections.")
+    st.subheader(f"Fabrication BOQ — {inv.item_type or 'assembly'} {inv.assembly_mark} × {inv.assembly_qty}")
+    if inv.boq:
+        boq_df = pd.DataFrame([r.model_dump() for r in inv.boq])
+        st.dataframe(boq_df, width="stretch", hide_index=True)
+        tot = lambda k: sum(getattr(r, k) or 0 for r in inv.boq)
+        st.caption(f"Total qty {tot('total_qty')} · calculated {tot('total_calc_wt'):.2f} kg · drawing "
+                   f"{tot('total_drg_wt'):.2f} kg · difference {tot('difference'):+.2f} kg. Plates: 7.85 × t kg/m²; "
+                   "rolled sections: IS 808 handbook kg/m; WT = drawing (Tekla) gross weight.")
+        st.download_button("BOQ (Excel, live formulas)", export.boq_excel(inv),
+                           f"{inv.drawing_no or 'drawing'}_BOQ.xlsx")
     st.subheader("Plates (by thickness and grade)")
     st.dataframe(pd.DataFrame([{**p.model_dump(), "sources": ", ".join(p.sources)} for p in inv.plates]),
                  width="stretch", hide_index=True)

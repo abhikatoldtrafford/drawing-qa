@@ -14,7 +14,7 @@ def test_exports(settings):
     base = ["Title", "BOM", "Locations", "Abstract", "Bolts", "Revisions", "Notes", "Views", "Checks"]
     assert openpyxl.load_workbook(io.BytesIO(export.to_excel(x))).sheetnames == base
     wb = openpyxl.load_workbook(io.BytesIO(export.to_excel(x, deterministic_inventory(x))))
-    assert wb.sheetnames == base + ["Inv Summary", "Inv Plates", "Inv Sections", "Inv Fasteners", "Inv Welds",
+    assert wb.sheetnames == ["BOQ"] + base + ["Inv Summary", "Inv Plates", "Inv Sections", "Inv Fasteners", "Inv Welds",
                                     "Inv Review", "Inv Checks"]
     assert wb["Inv Plates"].max_row == 9 + 1
     assert wb["BOM"].max_row == 71 + 1
