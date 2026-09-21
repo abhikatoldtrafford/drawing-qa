@@ -1,0 +1,49 @@
+{
+  "gt_rows": 8,
+  "our_rows": 8,
+  "evaluated_diffs": [],
+  "missing": [],
+  "extra": [],
+  "fields_checked": 136,
+  "field_diffs": [
+    {
+      "item": "2GU1",
+      "field": "grade",
+      "ours": "E350A",
+      "gt": "E2350A"
+    }
+  ],
+  "formula_diffs": [],
+  "totals": {
+    "total_qty": {
+      "ours": 66,
+      "gt": 66,
+      "match": true
+    },
+    "calc_wt": {
+      "ours": 979.5946458799999,
+      "gt": 979.5946458799999,
+      "match": true
+    },
+    "total_calc_wt": {
+      "ours": 979.5946458799999,
+      "gt": 979.5946458799999,
+      "match": true
+    },
+    "drg_wt": {
+      "ours": 976.84,
+      "gt": 976.8400000000001,
+      "match": true
+    },
+    "total_drg_wt": {
+      "ours": 976.84,
+      "gt": 976.8400000000001,
+      "match": true
+    },
+    "difference": {
+      "ours": 2.7546458799999307,
+      "gt": 2.754645879999927,
+      "match": true
+    }
+  }
+}

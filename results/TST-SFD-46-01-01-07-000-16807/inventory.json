@@ -1,0 +1,386 @@
+{
+  "drawing_no": "TST-SFD-46-01-01-07-000-16807",
+  "assembly_mark": "2GU1",
+  "assembly_qty": 1,
+  "item_type": "GUTTER",
+  "boq": [
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16807",
+      "item_type": "GUTTER",
+      "mark_no": "2GU1",
+      "item_no": "2GU1",
+      "section": "PL6",
+      "width": 1067.0,
+      "length": 1478.4,
+      "qty": 1,
+      "fab_qty": 1,
+      "total_qty": 1,
+      "unit_wt": 47.1,
+      "unit_wt_basis": "kg/m2",
+      "calc_wt": 74.29802688000001,
+      "total_calc_wt": 74.29802688000001,
+      "drg_wt": 74.3,
+      "total_drg_wt": 74.3,
+      "difference": -0.001973119999988171,
+      "grade": "E350A",
+      "unit_wt_source": "7.85 x t",
+      "note": ""
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16807",
+      "item_type": "GUTTER",
+      "mark_no": "2GU1",
+      "item_no": "2m272",
+      "section": "ISMC150",
+      "width": null,
+      "length": 9088.0,
+      "qty": 1,
+      "fab_qty": 1,
+      "total_qty": 1,
+      "unit_wt": 16.8,
+      "unit_wt_basis": "kg/m",
+      "calc_wt": 152.67839999999998,
+      "total_calc_wt": 152.67839999999998,
+      "drg_wt": 149.48,
+      "total_drg_wt": 149.48,
+      "difference": 3.1983999999999924,
+      "grade": "E250A",
+      "unit_wt_source": "IS 808 table",
+      "note": ""
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16807",
+      "item_type": "GUTTER",
+      "mark_no": "2GU1",
+      "item_no": "2m273",
+      "section": "ISA75X75X8",
+      "width": null,
+      "length": 9088.0,
+      "qty": 1,
+      "fab_qty": 1,
+      "total_qty": 1,
+      "unit_wt": 8.9,
+      "unit_wt_basis": "kg/m",
+      "calc_wt": 80.8832,
+      "total_calc_wt": 80.8832,
+      "drg_wt": 81.18,
+      "total_drg_wt": 81.18,
+      "difference": -0.2968000000000046,
+      "grade": "E250A",
+      "unit_wt_source": "IS 808 table",
+      "note": ""
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16807",
+      "item_type": "GUTTER",
+      "mark_no": "2GU1",
+      "item_no": "2p205",
+      "section": "PL8",
+      "width": 50.0,
+      "length": 400.3,
+      "qty": 18,
+      "fab_qty": 1,
+      "total_qty": 18,
+      "unit_wt": 62.8,
+      "unit_wt_basis": "kg/m2",
+      "calc_wt": 22.624956,
+      "total_calc_wt": 22.624956,
+      "drg_wt": 22.62,
+      "total_drg_wt": 22.62,
+      "difference": 0.0049559999999999604,
+      "grade": "E350A",
+      "unit_wt_source": "7.85 x t",
+      "note": ""
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16807",
+      "item_type": "GUTTER",
+      "mark_no": "2GU1",
+      "item_no": "2p206",
+      "section": "PL8",
+      "width": 50.0,
+      "length": 738.6,
+      "qty": 18,
+      "fab_qty": 1,
+      "total_qty": 18,
+      "unit_wt": 62.8,
+      "unit_wt_basis": "kg/m2",
+      "calc_wt": 41.745672,
+      "total_calc_wt": 41.745672,
+      "drg_wt": 41.73,
+      "total_drg_wt": 41.73,
+      "difference": 0.01567200000000213,
+      "grade": "E350A",
+      "unit_wt_source": "7.85 x t",
+      "note": ""
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16807",
+      "item_type": "GUTTER",
+      "mark_no": "2GU1",
+      "item_no": "2p207",
+      "section": "PL8",
+      "width": 50.0,
+      "length": 451.3,
+      "qty": 18,
+      "fab_qty": 1,
+      "total_qty": 18,
+      "unit_wt": 62.8,
+      "unit_wt_basis": "kg/m2",
+      "calc_wt": 25.507476,
+      "total_calc_wt": 25.507476,
+      "drg_wt": 25.51,
+      "total_drg_wt": 25.51,
+      "difference": -0.002524000000001081,
+      "grade": "E350A",
+      "unit_wt_source": "7.85 x t",
+      "note": ""
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16807",
+      "item_type": "GUTTER",
+      "mark_no": "2GU1",
+      "item_no": "2p208",
+      "section": "PL6",
+      "width": 1478.0,
+      "length": 2000.0,
+      "qty": 4,
+      "fab_qty": 1,
+      "total_qty": 4,
+      "unit_wt": 47.1,
+      "unit_wt_basis": "kg/m2",
+      "calc_wt": 556.9104,
+      "total_calc_wt": 556.9104,
+      "drg_wt": 557.07,
+      "total_drg_wt": 557.07,
+      "difference": -0.15960000000006858,
+      "grade": "E350A",
+      "unit_wt_source": "7.85 x t",
+      "note": ""
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16807",
+      "item_type": "GUTTER",
+      "mark_no": "2GU1",
+      "item_no": "2p209",
+      "section": "PL6",
+      "width": 75.0,
+      "length": 1412.4,
+      "qty": 5,
+      "fab_qty": 1,
+      "total_qty": 5,
+      "unit_wt": 47.1,
+      "unit_wt_basis": "kg/m2",
+      "calc_wt": 24.946514999999998,
+      "total_calc_wt": 24.946514999999998,
+      "drg_wt": 24.95,
+      "total_drg_wt": 24.95,
+      "difference": -0.0034850000000012926,
+      "grade": "E350A",
+      "unit_wt_source": "7.85 x t",
+      "note": ""
+    }
+  ],
+  "plates": [
+    {
+      "thickness_mm": 6.0,
+      "grade": "E350A",
+      "pieces": 10,
+      "area_m2": 13.931,
+      "weight_kg": 656.32,
+      "sources": [
+        "2GU1",
+        "2p208",
+        "2p209"
+      ]
+    },
+    {
+      "thickness_mm": 8.0,
+      "grade": "E350A",
+      "pieces": 54,
+      "area_m2": 1.431,
+      "weight_kg": 89.86,
+      "sources": [
+        "2p205",
+        "2p206",
+        "2p207"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "profile": "ISA75X75X8",
+      "family": "angle",
+      "grade": "E250A",
+      "pieces": 1,
+      "total_length_m": 9.088,
+      "weight_kg": 81.18,
+      "sources": [
+        "2m273"
+      ]
+    },
+    {
+      "profile": "ISMC150",
+      "family": "channel",
+      "grade": "E250A",
+      "pieces": 1,
+      "total_length_m": 9.088,
+      "weight_kg": 149.48,
+      "sources": [
+        "2m272"
+      ]
+    }
+  ],
+  "fasteners": [],
+  "unclassified": [],
+  "welds": [
+    {
+      "parts": [
+        "2m273",
+        "2p208"
+      ],
+      "size_mm": 5.0,
+      "length_mm": 9088.0,
+      "count": 1,
+      "edge": "length",
+      "sides": 1,
+      "tack": false,
+      "evidence": "Longitudinal view G3-G4: CONT. 5 weld callout at 2m273.",
+      "total_length_m": 9.088,
+      "weld_metal_kg": 0.892
+    },
+    {
+      "parts": [
+        "2m272",
+        "2p208"
+      ],
+      "size_mm": 5.0,
+      "length_mm": 18176.0,
+      "count": 1,
+      "edge": "length",
+      "sides": 2,
+      "tack": false,
+      "evidence": "Longitudinal view J4-J5: CONT. 5/5 weld callout at 2m272.",
+      "total_length_m": 18.176,
+      "weld_metal_kg": 1.784
+    },
+    {
+      "parts": [
+        "2p205",
+        "2p208"
+      ],
+      "size_mm": 5.0,
+      "length_mm": 800.6,
+      "count": 18,
+      "edge": "length",
+      "sides": 2,
+      "tack": false,
+      "evidence": "Section A-A, K-L: TYP. 5/5 weld callouts at 2p205; quantity from BOM.",
+      "total_length_m": 14.411,
+      "weld_metal_kg": 1.414
+    },
+    {
+      "parts": [
+        "2p206",
+        "2p208"
+      ],
+      "size_mm": 5.0,
+      "length_mm": 1477.2,
+      "count": 18,
+      "edge": "length",
+      "sides": 2,
+      "tack": false,
+      "evidence": "Section A-A, L3-L4: TYP. 5/5 weld callout at 2p206; quantity from BOM.",
+      "total_length_m": 26.59,
+      "weld_metal_kg": 2.609
+    },
+    {
+      "parts": [
+        "2p207",
+        "2p208"
+      ],
+      "size_mm": 5.0,
+      "length_mm": 902.6,
+      "count": 18,
+      "edge": "length",
+      "sides": 2,
+      "tack": false,
+      "evidence": "Section A-A, L4-L5: TYP. 5/5 weld callout at 2p207; quantity from BOM.",
+      "total_length_m": 16.247,
+      "weld_metal_kg": 1.594
+    },
+    {
+      "parts": [
+        "2p209",
+        "2p208"
+      ],
+      "size_mm": 5.0,
+      "length_mm": 2974.8,
+      "count": 5,
+      "edge": "perimeter",
+      "sides": 1,
+      "tack": false,
+      "evidence": "Longitudinal view H20 / tile 3 H: '3 SIDES TYP.' with 5 mm weld callout at 2p209; quantity from BOM.",
+      "total_length_m": 14.874,
+      "weld_metal_kg": 1.46
+    }
+  ],
+  "rejected_welds": [],
+  "paint_area_m2": 39.16,
+  "weld_metal_kg": 9.75,
+  "electrode_kg": 16.25,
+  "total_steel_kg": 976.84,
+  "model": "gpt-5.4-mini (sections) + gpt-5.5 (welds)",
+  "checks": [
+    {
+      "id": "boq.drawing_weight",
+      "level": "pass",
+      "message": "BOQ total drawing weight 976.84 kg; BOM gross total 976.84 kg.",
+      "region": "inventory"
+    },
+    {
+      "id": "boq.calculated",
+      "level": "pass",
+      "message": "BOQ calculated 979.59 kg vs drawing 976.84 kg (+2.75 kg).",
+      "region": "inventory"
+    },
+    {
+      "id": "inventory.unclassified",
+      "level": "pass",
+      "message": "Every BOM member is classified.",
+      "region": "inventory"
+    },
+    {
+      "id": "inventory.welds",
+      "level": "pass",
+      "message": "6 weld runs accepted",
+      "region": "inventory"
+    },
+    {
+      "id": "inventory.weld_estimate",
+      "level": "warn",
+      "message": "Weld metal 9.75 kg (1.00% of steel; fabricated steel is typically 1-2%) is a model-read estimate, unverified: topology read by OpenAI, lengths computed from the BOM, tack welds excluded.",
+      "region": "inventory"
+    },
+    {
+      "id": "inventory.weight",
+      "level": "pass",
+      "message": "Plates + sections = 976.84 kg; BOM gross total = 976.84 kg.",
+      "region": "inventory"
+    },
+    {
+      "id": "inventory.paint",
+      "level": "pass",
+      "message": "Paint area 39.16 m² (BOM total); Σ row area × qty = 39.06 m².",
+      "region": "inventory"
+    }
+  ],
+  "usage": {
+    "gpt-5.4-mini:input": 23659,
+    "gpt-5.4-mini:output": 693,
+    "gpt-5.4-mini:calls": 1,
+    "gpt-5.5:input": 23659,
+    "gpt-5.5:output": 5730,
+    "gpt-5.5:calls": 1
+  }
+}

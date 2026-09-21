@@ -4,7 +4,6 @@ __pycache__/
 *.pyc
 # proprietary client drawings: keep local, never commit
 *.pdf
-# user's reference BOQs / exports: keep local
+# user's reference BOQs: keep local (results workbooks are committed, see below)
 *.xlsx
-# pipeline outputs derived from the client drawings: keep local
-results/
+!results/**/*.xlsx

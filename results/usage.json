@@ -1,0 +1,14 @@
+{
+  "gpt-5.4-mini": {
+    "input": 1094740,
+    "output": 11490,
+    "cached": 983040,
+    "calls": 31
+  },
+  "gpt-5.5": {
+    "input": 58547,
+    "output": 16030,
+    "cached": 0,
+    "calls": 3
+  }
+}

@@ -73,6 +73,94 @@ The repo root holds six client PDFs; the sixth is a byte-identical copy of 16807
 
 ## How it works
 
+### The problem, and the split
+
+A Tekla fabrication sheet is a vector PDF: every number on it — the bill of materials, the title block, the
+dimensions — is real text, positioned on the page. Nothing needs to be guessed. But a lot of what an estimator
+needs is *not* text: which plate is welded to which, what a view is showing, how a rolled cone unrolls.
+
+So the work is split by what each side is actually good at:
+
+- **PyMuPDF reads and checks.** It recovers the tables exactly, and arithmetic proves the result: rows multiply
+  out, totals add up, and a second independent parse agrees with the first. This costs nothing and never varies
+  between runs.
+- **OpenAI reads the drawing.** It sees the sheet as images *and* as text, and answers questions about it. In the
+  inventory it supplies only what parsing cannot: which parts are welded together, what an unrecognised section
+  is made from, and handbook weights for designations missing from the table.
+- **Code has the last word on every number.** The model gives weld topology, not weld lengths — the lengths come
+  from the BOM geometry. A plate breakdown is accepted only if it reconciles with the BOM weight. Anything that
+  cannot be verified is labelled unverified and kept out of the BOQ.
+
+Giving the model the text layer as well as the images is also what keeps the bill down: it doesn't have to squint
+at a raster to read a number that PyMuPDF already has exactly.
+
+### Stage by stage
+
+**1. Open the page.** `PageLayout` wraps one PyMuPDF page: its words, text lines, drawn line segments, and the
+sheet grid recovered from the numbers and letters printed around the border. That grid is what lets everything
+afterwards say *where* something is — `[E7]` — in the same language the drawing itself uses.
+
+**2. Read the sheet.** The parsers find each region by its printed title and the drawn cell borders, then read it:
+the BOM, the abstract, the bolt list, the title block, revisions, notes, erection locations, part marks and view
+labels. This is all deterministic: no model, no API key. The result is one `PageExtract` record, cached on disk by
+file hash so a re-opened drawing is instant.
+
+**3. Check it.** `run_checks` re-does the sheet's own arithmetic: qty × piece weight = gross on every row, the
+part weights sum to the stated total, the abstract matches the BOM grouped by section, the title-block weight
+matches, every BOM mark actually appears on a view, and a second BOM parse via `find_tables` agrees field by
+field. A **fail** means the sheet and the extract disagree — don't trust the output until it's resolved. A
+**warn** is worth a look. All five sample drawings run with zero fails.
+
+**4. Build the inventory and the BOQ, without any model.** Each BOM section string is parsed into a shape:
+`PL6*800` is a plate, `ISMC150` a channel, `PIPE508*6` a pipe, `WH1200X500X50X32` a welded built-up that
+decomposes into flange and web plates, `SPD508*508*608*608*8` a rolled cone that unrolls into one flat plate.
+Each shape gets a unit weight — 7.85 × t for plates, the IS 808 table for rolled sections, a formula for pipes and
+rods — and that produces both the material inventory (plates by thickness, sections by profile, fasteners, paint
+area) and the fabrication BOQ, in your reference workbook's layout with live formulas.
+
+**5. Ask OpenAI for the rest.** One structured call sends the whole sheet — the grid-tagged text layer, tiles of
+the full sheet, and the BOM *without its weights*, so the model cannot simply echo them back. It returns weld
+topology, breakdowns for any section the code couldn't parse, and handbook weights for missing rolled
+designations. Then the guardrails run: a weld whose size isn't a callout on the sheet, or that cites a part not in
+the BOM, or whose length is geometrically impossible, or that exceeds the joint budget, is rejected with a reason.
+A breakdown is accepted only if its thickness is in the section name and its weight is within ±2% of the BOM. If
+the call fails, leaves a section unresolved, or gets most of its welds rejected, the step escalates once to the
+deeper model and keeps the better result for each part.
+
+**6. Ask questions.** Every chat turn starts from the same page context plus the validated extract and inventory,
+so the model always has the whole sheet rather than a crop. When a detail is too small to read, it calls `zoom` on
+a grid cell or a view label and gets a high-resolution image back; `search_text` locates a mark; `query_bom`
+filters rows. Answers cite marks, BOM rows, grid cells and view labels, so each one can be checked against the
+sheet. Because the context prefix is byte-identical on every call, OpenAI's prompt cache serves most of it — in
+the last full run, 90% of the input tokens were cached.
+
+**7. Export.** The BOQ downloads as Excel with live formulas and open-ended subtotals, so rows added by hand still
+count. The full workbook adds the extract and inventory sheets; BOM CSV and JSON are there for other tools.
+
+### One part, end to end
+
+Take `1m470` on drawing 16362, a BOM row reading `SPD508*508*608*608*8`, length 506, qty 1, 54.93 kg:
+
+1. PyMuPDF reads that row and confirms 1 × 54.93 = 54.93, and that the row's weight is part of a total that
+   matches the title block.
+2. `sections.py` recognises `SPD` as a rolled cone, 508 to 608 diameter, 8 mm thick.
+3. The cone is developed flat on its mean diameters: a PL8 plate 1727.9 × 508.5 mm.
+4. 7.85 × 8 mm gives 62.8 kg/m², so the plate calculates to 55.17 kg — within 0.5% of the drawing's 54.93 kg,
+   which is the cross-check that the development is right.
+5. It appears in the BOQ as `1m470 cone plate`, PL8, with the fabrication quantity of 2 applied, and in the
+   inventory as 8 mm plate area rather than as a mystery section.
+
+No model was involved. When the model *did* propose a weld around that cone, the guardrail rejected it, because a
+"circumference" edge doesn't fit a cone's geometry — that rejection is recorded in
+`results/TST-SFD-46-01-01-07-000-16362/report.md`.
+
+### What it costs, and what runs without a key
+
+The extract, the checks, the inventory, the BOQ and every export are free and offline. Only the chat and the
+inventory's weld/unknown-section step call OpenAI. A full run over all five drawings — five inventory calls,
+three escalations and twenty chat questions — used about 1.1 M input tokens on `gpt-5.4-mini`, 90% of them from
+the prompt cache.
+
 ```
  PDF page
    │
@@ -474,7 +562,10 @@ docs/superpowers/           design spec and implementation plan (with the audit 
 
 ## Data handling
 
-- The drawings (`*.pdf`), reference workbooks (`*.xlsx`) and `results/` are proprietary client data. They are
-  git-ignored and never committed.
+- The drawings (`*.pdf`) and the reference workbook `2GU1 BOQ.xlsx` are proprietary client data: git-ignored and
+  never committed. Put them in the repo root (or point `DQA_SAMPLES` elsewhere) to run the app, the tests or a
+  batch run.
+- `results/` **is committed**, because the reports are the point of the repo. It contains the drawings' BOM data,
+  so this repository is private and must stay private.
 - The OpenAI key is read only from the environment and is never written to disk or logs.
 - Only the selected page (its images and text) is sent to OpenAI.

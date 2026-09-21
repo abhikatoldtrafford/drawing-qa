@@ -1,0 +1,503 @@
+{
+  "source_file": "TST-SFD-46-01-01-07-000-16362_20260813153914809.pdf",
+  "file_sha256": "618d0ebbaa69c7945a1969fd391f1a9d09bd3275c6c52ee0c157b66ed9b9d0b4",
+  "page_index": 0,
+  "page_size_pt": [
+    2590.865966796875,
+    1729.134033203125
+  ],
+  "has_text_layer": true,
+  "title_block": {
+    "drawing_no": "TST-SFD-46-01-01-07-000-16362",
+    "rev": "0",
+    "sheet_no": "1 OF 1",
+    "sheet_size": "A1",
+    "weight_kg": 350.52,
+    "department": "DESIGN & ENGINEERING-STRUCTURAL",
+    "equip_area": "HOT ROLLED PICKLING GALVANIZED LINE (HRPGL)",
+    "project": "",
+    "title_lines": [
+      "SHED FOR POCIL PLOT LOT-1",
+      "DETAIL OF DOWN COMER MKD AS -1DC1"
+    ],
+    "drn": {
+      "name": "IRCON",
+      "date": "09.07.2026"
+    },
+    "chd": {
+      "name": "SKS/NBT",
+      "date": "09.07.2026"
+    },
+    "app": {
+      "name": "SSA",
+      "date": "09.07.2026"
+    }
+  },
+  "mark_locations": [
+    {
+      "mark_no": "1DC1",
+      "grid_location": "19-20/<LEG-1",
+      "level": "EL. +17.065"
+    },
+    {
+      "mark_no": "1DC1",
+      "grid_location": "22-23/<LEG-1",
+      "level": "EL. +17.049"
+    }
+  ],
+  "bom": {
+    "assembly": {
+      "erection_mark": "1DC1",
+      "item_no": "",
+      "section": "",
+      "length_mm": null,
+      "qty": 2,
+      "pc_wt": 175.26,
+      "net_kg": 161.64,
+      "gross_kg": 350.52,
+      "material": "",
+      "remarks": "",
+      "surface_area_m2": 9.72,
+      "bbox": [
+        1595.7769775390625,
+        143.2230682373047,
+        2470.94287109375,
+        165.11872520446778
+      ]
+    },
+    "parts": [
+      {
+        "erection_mark": "",
+        "item_no": "1DC1",
+        "section": "PIPE508*6",
+        "length_mm": 400.0,
+        "qty": 1,
+        "pc_wt": 29.59,
+        "net_kg": 29.59,
+        "gross_kg": 29.59,
+        "material": "YST 240",
+        "remarks": "",
+        "surface_area_m2": 0.65,
+        "bbox": [
+          1595.7769775390625,
+          165.11872520446778,
+          2470.94287109375,
+          183.9775505065918
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "1m470",
+        "section": "SPD508*508*608*608*8",
+        "length_mm": 506.0,
+        "qty": 1,
+        "pc_wt": 54.93,
+        "net_kg": 54.93,
+        "gross_kg": 54.93,
+        "material": "YST 240",
+        "remarks": "",
+        "surface_area_m2": 0.91,
+        "bbox": [
+          1595.7769775390625,
+          183.9775505065918,
+          2470.94287109375,
+          202.86087499346053
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "1m471",
+        "section": "ISMC150",
+        "length_mm": 800.0,
+        "qty": 1,
+        "pc_wt": 13.16,
+        "net_kg": 13.38,
+        "gross_kg": 13.16,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 0.45,
+        "bbox": [
+          1595.7769775390625,
+          202.86087499346053,
+          2470.94287109375,
+          221.74420710972376
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "1m472",
+        "section": "ISA75X75X8",
+        "length_mm": 800.0,
+        "qty": 1,
+        "pc_wt": 7.15,
+        "net_kg": 7.16,
+        "gross_kg": 7.15,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 0.23,
+        "bbox": [
+          1595.7769775390625,
+          221.74420710972376,
+          2470.94287109375,
+          240.66295896257674
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "1m473",
+        "section": "ROD8",
+        "length_mm": 608.0,
+        "qty": 22,
+        "pc_wt": 0.22,
+        "net_kg": 4.75,
+        "gross_kg": 4.75,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 0.01,
+        "bbox": [
+          1595.7769775390625,
+          240.66295896257674,
+          2470.94287109375,
+          259.5817195347377
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "1p374",
+        "section": "PL6*800",
+        "length_mm": 1478.4,
+        "qty": 1,
+        "pc_wt": 55.71,
+        "net_kg": 42.09,
+        "gross_kg": 55.71,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 1.83,
+        "bbox": [
+          1595.7769775390625,
+          259.5817195347377,
+          2470.94287109375,
+          278.50047302246094
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "1p375",
+        "section": "PL6*75",
+        "length_mm": 1412.4,
+        "qty": 2,
+        "pc_wt": 4.99,
+        "net_kg": 9.98,
+        "gross_kg": 9.98,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.23,
+        "bbox": [
+          1595.7769775390625,
+          278.50047302246094,
+          2470.94287109375,
+          300.8871765136719
+        ]
+      }
+    ],
+    "totals": {
+      "net_kg": 161.64,
+      "gross_kg": 350.52,
+      "surface_area_m2": 9.72
+    },
+    "bbox": [
+      1595.7769775390625,
+      94.1607666015625,
+      2470.94287109375,
+      319.8006286621094
+    ]
+  },
+  "abstract": {
+    "rows": [
+      {
+        "sr": 1,
+        "description": "ISA75X75X8",
+        "total_wt": 14.29
+      },
+      {
+        "sr": 2,
+        "description": "ISMC150",
+        "total_wt": 26.32
+      },
+      {
+        "sr": 3,
+        "description": "PIPE508*6",
+        "total_wt": 59.18
+      },
+      {
+        "sr": 4,
+        "description": "ROD8",
+        "total_wt": 9.5
+      },
+      {
+        "sr": 5,
+        "description": "SPD508*508*608*608*8",
+        "total_wt": 109.86
+      },
+      {
+        "sr": 6,
+        "description": "PL 6 THK",
+        "total_wt": 131.37
+      }
+    ],
+    "total_kg": 350.52
+  },
+  "bolts": [],
+  "revisions": [
+    {
+      "rev": "0",
+      "date": "09.07.2026",
+      "description": "ISSUED FOR CONSTRUCTION",
+      "drn": "IRCON",
+      "chd": "SKS/NBT",
+      "app": "SSA"
+    }
+  ],
+  "notes": [
+    "1. ALL DIMENSIONS ARE IN mm & LEVELS ARE IN METER(UNO)",
+    "2. ALL WELDS SHALL BE 6MM FILLET WELDS U.N.O.",
+    "3. FOR MARKING REF. DRG. NO. TST-SFD-46-01-01-07-000-16250 TO 16271",
+    "4. ALL PERMANENT BOLTS ARE FULL THREADED.",
+    "5. ERECTION BOLT/”C” CLAMP/”L” CLAMP AS APPLICABLE SHALL BE USED DURING STRUCTURAL ASSEMBLY IN FABRICATION SHOP."
+  ],
+  "part_marks": [
+    "1DC1",
+    "1m470",
+    "1m471",
+    "1m472",
+    "1m473",
+    "1p374",
+    "1p375"
+  ],
+  "view_labels": [
+    {
+      "label": "A - A",
+      "kind": "section",
+      "ref": "A",
+      "scale": "1:10",
+      "bbox": [
+        446.7087707519531,
+        569.957275390625,
+        474.98406982421875,
+        584.884765625
+      ],
+      "cell": "D3"
+    },
+    {
+      "label": "B - B",
+      "kind": "section",
+      "ref": "B",
+      "scale": "1:10",
+      "bbox": [
+        839.4457397460938,
+        1089.129150390625,
+        867.7210693359375,
+        1104.056640625
+      ],
+      "cell": "H5"
+    },
+    {
+      "label": "MARK. NO:- 1DC1",
+      "kind": "detail",
+      "ref": "1DC1",
+      "scale": "",
+      "bbox": [
+        2025.015380859375,
+        668.7777099609375,
+        2090.7314453125,
+        679.5839233398438
+      ],
+      "cell": "E14"
+    },
+    {
+      "label": "MARK. NO:- 1m470",
+      "kind": "detail",
+      "ref": "1m470",
+      "scale": "",
+      "bbox": [
+        1283.45263671875,
+        1037.7724609375,
+        1353.1112060546875,
+        1048.57861328125
+      ],
+      "cell": "H9"
+    },
+    {
+      "label": "MARK. NO:- 1m471",
+      "kind": "detail",
+      "ref": "1m471",
+      "scale": "",
+      "bbox": [
+        1967.4136962890625,
+        896.068603515625,
+        2037.0723876953125,
+        906.8748168945312
+      ],
+      "cell": "G13"
+    },
+    {
+      "label": "MARK. NO:- 1m472",
+      "kind": "detail",
+      "ref": "1m472",
+      "scale": "",
+      "bbox": [
+        1953.6246337890625,
+        1075.2806396484375,
+        2023.2833251953125,
+        1086.0867919921875
+      ],
+      "cell": "H13"
+    },
+    {
+      "label": "MARK. NO:- 1m473",
+      "kind": "detail",
+      "ref": "1m473",
+      "scale": "",
+      "bbox": [
+        2299.508056640625,
+        843.4108276367188,
+        2369.166748046875,
+        854.217041015625
+      ],
+      "cell": "F16"
+    },
+    {
+      "label": "MARK. NO:- 1p375",
+      "kind": "detail",
+      "ref": "1p375",
+      "scale": "",
+      "bbox": [
+        898.13623046875,
+        602.3933715820312,
+        979.839599609375,
+        613.0563354492188
+      ],
+      "cell": "E6"
+    }
+  ],
+  "regions": {
+    "bom": [
+      1595.7769775390625,
+      94.1607666015625,
+      2470.94287109375,
+      319.8006286621094
+    ],
+    "title_block": [
+      1850.314453125,
+      1510.1815185546875,
+      2590.865966796875,
+      1729.134033203125
+    ],
+    "abstract": [
+      1378.2174072265625,
+      53.96194076538086,
+      1673.7408447265625,
+      221.26840209960938
+    ],
+    "bolts": [
+      1382.469970703125,
+      1436.19921875,
+      2603.943115234375,
+      1515.1815185546875
+    ],
+    "notes": [
+      701.8167724609375,
+      1590.934814453125,
+      1126.8167724609375,
+      1690.934814453125
+    ],
+    "mark_location": [
+      145.79696655273438,
+      58.31880187988281,
+      475.9907531738281,
+      158.98177337646484
+    ],
+    "revisions": [
+      0.0,
+      1469.3154296875,
+      870.5389099121094,
+      1687.1112060546875
+    ]
+  },
+  "bom_crosscheck": [],
+  "pipeline_errors": [],
+  "checks": [
+    {
+      "id": "bom.row_arith",
+      "level": "pass",
+      "message": "All 7 rows: qty × pc wt = gross (± rounding).",
+      "region": "bom"
+    },
+    {
+      "id": "bom.gross_total",
+      "level": "pass",
+      "message": "Σ part gross × assembly qty 2 = 350.54; grand total = 350.52.",
+      "region": "bom"
+    },
+    {
+      "id": "bom.assembly_row",
+      "level": "pass",
+      "message": "Assembly row 1DC1 gross 350.52 vs grand total 350.52.",
+      "region": "bom"
+    },
+    {
+      "id": "bom.net_total",
+      "level": "pass",
+      "message": "Σ part net = 161.88 (× qty 2 = 323.76); net total = 161.64. Tekla net totals often differ; informational.",
+      "region": "bom"
+    },
+    {
+      "id": "bom.crosscheck",
+      "level": "pass",
+      "message": "find_tables() second parse agrees on every row (section, length, qty, gross, material).",
+      "region": "bom"
+    },
+    {
+      "id": "marks.bom_on_sheet",
+      "level": "pass",
+      "message": "Every BOM mark appears on the drawing.",
+      "region": "bom"
+    },
+    {
+      "id": "title.weight",
+      "level": "pass",
+      "message": "Title block weight 350.52 vs BOM gross 350.52.",
+      "region": "title_block"
+    },
+    {
+      "id": "mark_location.assembly",
+      "level": "pass",
+      "message": "Mark box ['1DC1', '1DC1'] vs BOM assembly '1DC1'.",
+      "region": "bom"
+    },
+    {
+      "id": "mark_location.count",
+      "level": "pass",
+      "message": "2 erection location(s) listed; assembly qty 2.",
+      "region": "bom"
+    },
+    {
+      "id": "abstract.total",
+      "level": "pass",
+      "message": "Σ abstract = 350.52; abstract total = 350.52; BOM gross = 350.52.",
+      "region": "abstract"
+    },
+    {
+      "id": "abstract.by_section",
+      "level": "pass",
+      "message": "Every abstract row equals the BOM gross for that section/plate thickness.",
+      "region": "bom"
+    },
+    {
+      "id": "title.drawing_no",
+      "level": "pass",
+      "message": "Drawing no. TST-SFD-46-01-01-07-000-16362 matches file name.",
+      "region": "title_block"
+    }
+  ]
+}

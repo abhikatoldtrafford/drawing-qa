@@ -1,0 +1,356 @@
+{
+  "drawing_no": "TST-SFD-46-01-01-07-000-16362",
+  "assembly_mark": "1DC1",
+  "assembly_qty": 2,
+  "item_type": "DOWN COMER",
+  "boq": [
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16362",
+      "item_type": "DOWN COMER",
+      "mark_no": "1DC1",
+      "item_no": "1DC1",
+      "section": "PIPE508*6",
+      "width": null,
+      "length": 400.0,
+      "qty": 1,
+      "fab_qty": 2,
+      "total_qty": 2,
+      "unit_wt": 74.28,
+      "unit_wt_basis": "kg/m",
+      "calc_wt": 29.712000000000003,
+      "total_calc_wt": 59.42400000000001,
+      "drg_wt": 29.59,
+      "total_drg_wt": 59.18,
+      "difference": 0.24400000000000688,
+      "grade": "YST 240",
+      "unit_wt_source": "computed (pi (OD-t) t x 7850)",
+      "note": "BOM length is the longest length; DIFFERENCE includes mitre / hole cut-off"
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16362",
+      "item_type": "DOWN COMER",
+      "mark_no": "1DC1",
+      "item_no": "1m470 cone plate",
+      "section": "PL8",
+      "width": 1727.9,
+      "length": 508.5,
+      "qty": 1,
+      "fab_qty": 2,
+      "total_qty": 2,
+      "unit_wt": 62.8,
+      "unit_wt_basis": "kg/m2",
+      "calc_wt": 55.178413019999994,
+      "total_calc_wt": 110.35682603999999,
+      "drg_wt": 54.93,
+      "total_drg_wt": 109.86,
+      "difference": 0.49682603999998776,
+      "grade": "YST 240",
+      "unit_wt_source": "7.85 x t",
+      "note": "SPD508*508*608*608*8: rolled cone, developed plate (mean circumference x slant height); WT shared by plate weight"
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16362",
+      "item_type": "DOWN COMER",
+      "mark_no": "1DC1",
+      "item_no": "1m471",
+      "section": "ISMC150",
+      "width": null,
+      "length": 800.0,
+      "qty": 1,
+      "fab_qty": 2,
+      "total_qty": 2,
+      "unit_wt": 16.8,
+      "unit_wt_basis": "kg/m",
+      "calc_wt": 13.440000000000001,
+      "total_calc_wt": 26.880000000000003,
+      "drg_wt": 13.16,
+      "total_drg_wt": 26.32,
+      "difference": 0.5600000000000023,
+      "grade": "E250A",
+      "unit_wt_source": "IS 808 table",
+      "note": ""
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16362",
+      "item_type": "DOWN COMER",
+      "mark_no": "1DC1",
+      "item_no": "1m472",
+      "section": "ISA75X75X8",
+      "width": null,
+      "length": 800.0,
+      "qty": 1,
+      "fab_qty": 2,
+      "total_qty": 2,
+      "unit_wt": 8.9,
+      "unit_wt_basis": "kg/m",
+      "calc_wt": 7.120000000000001,
+      "total_calc_wt": 14.240000000000002,
+      "drg_wt": 7.15,
+      "total_drg_wt": 14.3,
+      "difference": -0.05999999999999872,
+      "grade": "E250A",
+      "unit_wt_source": "IS 808 table",
+      "note": ""
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16362",
+      "item_type": "DOWN COMER",
+      "mark_no": "1DC1",
+      "item_no": "1m473",
+      "section": "ROD8",
+      "width": null,
+      "length": 608.0,
+      "qty": 22,
+      "fab_qty": 2,
+      "total_qty": 44,
+      "unit_wt": 0.395,
+      "unit_wt_basis": "kg/m",
+      "calc_wt": 5.28352,
+      "total_calc_wt": 10.56704,
+      "drg_wt": 4.75,
+      "total_drg_wt": 9.5,
+      "difference": 1.0670400000000004,
+      "grade": "E250A",
+      "unit_wt_source": "computed (pi d²/4 x 7850)",
+      "note": ""
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16362",
+      "item_type": "DOWN COMER",
+      "mark_no": "1DC1",
+      "item_no": "1p374",
+      "section": "PL6",
+      "width": 800.0,
+      "length": 1478.4,
+      "qty": 1,
+      "fab_qty": 2,
+      "total_qty": 2,
+      "unit_wt": 47.1,
+      "unit_wt_basis": "kg/m2",
+      "calc_wt": 55.70611200000001,
+      "total_calc_wt": 111.41222400000002,
+      "drg_wt": 55.71,
+      "total_drg_wt": 111.42,
+      "difference": -0.007775999999978467,
+      "grade": "E350A",
+      "unit_wt_source": "7.85 x t",
+      "note": ""
+    },
+    {
+      "drawing_no": "TST-SFD-46-01-01-07-000-16362",
+      "item_type": "DOWN COMER",
+      "mark_no": "1DC1",
+      "item_no": "1p375",
+      "section": "PL6",
+      "width": 75.0,
+      "length": 1412.4,
+      "qty": 2,
+      "fab_qty": 2,
+      "total_qty": 4,
+      "unit_wt": 47.1,
+      "unit_wt_basis": "kg/m2",
+      "calc_wt": 9.978606000000001,
+      "total_calc_wt": 19.957212000000002,
+      "drg_wt": 9.98,
+      "total_drg_wt": 19.96,
+      "difference": -0.0027879999999989025,
+      "grade": "E350A",
+      "unit_wt_source": "7.85 x t",
+      "note": ""
+    }
+  ],
+  "plates": [
+    {
+      "thickness_mm": 6.0,
+      "grade": "E350A",
+      "pieces": 6,
+      "area_m2": 2.789,
+      "weight_kg": 131.38,
+      "sources": [
+        "1p374",
+        "1p375"
+      ]
+    },
+    {
+      "thickness_mm": 8.0,
+      "grade": "YST 240",
+      "pieces": 2,
+      "area_m2": 1.757,
+      "weight_kg": 109.86,
+      "sources": [
+        "1m470 (cone 1727.9x8)"
+      ]
+    }
+  ],
+  "sections": [
+    {
+      "profile": "ISA75X75X8",
+      "family": "angle",
+      "grade": "E250A",
+      "pieces": 2,
+      "total_length_m": 1.6,
+      "weight_kg": 14.3,
+      "sources": [
+        "1m472"
+      ]
+    },
+    {
+      "profile": "ISMC150",
+      "family": "channel",
+      "grade": "E250A",
+      "pieces": 2,
+      "total_length_m": 1.6,
+      "weight_kg": 26.32,
+      "sources": [
+        "1m471"
+      ]
+    },
+    {
+      "profile": "PIPE508*6",
+      "family": "pipe",
+      "grade": "YST 240",
+      "pieces": 2,
+      "total_length_m": 0.8,
+      "weight_kg": 59.18,
+      "sources": [
+        "1DC1"
+      ]
+    },
+    {
+      "profile": "ROD8",
+      "family": "round",
+      "grade": "E250A",
+      "pieces": 44,
+      "total_length_m": 26.752,
+      "weight_kg": 9.5,
+      "sources": [
+        "1m473"
+      ]
+    }
+  ],
+  "fasteners": [],
+  "unclassified": [],
+  "welds": [
+    {
+      "parts": [
+        "1DC1",
+        "1m470"
+      ],
+      "size_mm": 6.0,
+      "length_mm": 1595.9,
+      "count": 1,
+      "edge": "circumference",
+      "sides": 1,
+      "tack": false,
+      "evidence": "Section/B-B area F-G: pipe 1DC1 to reducer 1m470 joint marked TYP.; general note 6 mm fillet U.N.O.",
+      "total_length_m": 3.192,
+      "weld_metal_kg": 0.451
+    },
+    {
+      "parts": [
+        "1m473",
+        "1p374"
+      ],
+      "size_mm": 6.0,
+      "length_mm": 608.0,
+      "count": 22,
+      "edge": "length",
+      "sides": 1,
+      "tack": true,
+      "evidence": "A-A view C-D/F: rod cage labelled 11x 1m473 each way; note at D4 says CAGE TO BE TACK WELDED; general note 6 mm fillet U.N.O.",
+      "total_length_m": 26.752,
+      "weld_metal_kg": 0.0
+    },
+    {
+      "parts": [
+        "1m471",
+        "1p374"
+      ],
+      "size_mm": 4.0,
+      "length_mm": 1600.0,
+      "count": 1,
+      "edge": "length",
+      "sides": 2,
+      "tack": false,
+      "evidence": "Side/section detail around E-F: weld symbol 4/4 CONT. at 1m471 to 1p374 joint.",
+      "total_length_m": 3.2,
+      "weld_metal_kg": 0.201
+    },
+    {
+      "parts": [
+        "1m472",
+        "1p374"
+      ],
+      "size_mm": 4.0,
+      "length_mm": 800.0,
+      "count": 1,
+      "edge": "length",
+      "sides": 1,
+      "tack": false,
+      "evidence": "Side/section detail E-F: CONT. 4 weld symbol at 1m472 angle to plate joint.",
+      "total_length_m": 1.6,
+      "weld_metal_kg": 0.1
+    }
+  ],
+  "rejected_welds": [
+    "1m470->1p374 circumference 6mm: edge 'circumference' does not apply to 1m470 SPD508*508*608*608*8"
+  ],
+  "paint_area_m2": 9.72,
+  "weld_metal_kg": 0.75,
+  "electrode_kg": 1.25,
+  "total_steel_kg": 350.52,
+  "model": "gpt-5.4-mini (sections) + gpt-5.5 (welds)",
+  "checks": [
+    {
+      "id": "boq.drawing_weight",
+      "level": "pass",
+      "message": "BOQ total drawing weight 350.54 kg; BOM gross total 350.52 kg.",
+      "region": "inventory"
+    },
+    {
+      "id": "boq.calculated",
+      "level": "warn",
+      "message": "BOQ calculated 352.84 kg vs drawing 350.54 kg (+2.30 kg). Rows off by >5%: ['1m473 ROD8: +1.07 kg'].",
+      "region": "inventory"
+    },
+    {
+      "id": "inventory.unclassified",
+      "level": "pass",
+      "message": "Every BOM member is classified.",
+      "region": "inventory"
+    },
+    {
+      "id": "inventory.welds",
+      "level": "warn",
+      "message": "4 weld runs accepted; 1 rejected: 1m470->1p374 circumference 6mm: edge 'circumference' does not apply to 1m470 SPD508*508*608*608*8",
+      "region": "inventory"
+    },
+    {
+      "id": "inventory.weld_estimate",
+      "level": "warn",
+      "message": "Weld metal 0.75 kg (0.21% of steel; fabricated steel is typically 1-2%) is a model-read estimate, unverified: topology read by OpenAI, lengths computed from the BOM, tack welds excluded.",
+      "region": "inventory"
+    },
+    {
+      "id": "inventory.weight",
+      "level": "pass",
+      "message": "Plates + sections = 350.54 kg; BOM gross total = 350.52 kg.",
+      "region": "inventory"
+    },
+    {
+      "id": "inventory.paint",
+      "level": "pass",
+      "message": "Paint area 9.72 m² (BOM total); Σ row area × qty = 9.50 m².",
+      "region": "inventory"
+    }
+  ],
+  "usage": {
+    "gpt-5.4-mini:input": 16518,
+    "gpt-5.4-mini:output": 420,
+    "gpt-5.4-mini:cached": 15488,
+    "gpt-5.4-mini:calls": 1,
+    "gpt-5.5:input": 16518,
+    "gpt-5.5:output": 6013,
+    "gpt-5.5:calls": 1
+  }
+}

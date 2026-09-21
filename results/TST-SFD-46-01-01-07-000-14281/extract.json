@@ -1,0 +1,2124 @@
+{
+  "source_file": "TST-SFD-46-01-01-07-000-14281(UPDATED).pdf",
+  "file_sha256": "4332b340a194344047ee1685c395001fea5be37e84608cdf7fc91e5309893f8d",
+  "page_index": 0,
+  "page_size_pt": [
+    3398.739990234375,
+    2412.282958984375
+  ],
+  "has_text_layer": true,
+  "title_block": {
+    "drawing_no": "TST-SFD-46-01-01-07-000-14281",
+    "rev": "0",
+    "sheet_no": "1 OF 1",
+    "sheet_size": "A0",
+    "weight_kg": 26121.53,
+    "department": "DESIGN & ENGINEERING-STRUCTURAL",
+    "equip_area": "HOT ROLLED PICKLING GALVANIZING LINE (HRPGL)",
+    "project": "CRC WEST TARAPUR, HRPGL",
+    "title_lines": [
+      "PROCESS BAY : POT AREA WITH EXIT ECR LOT-3",
+      "DETAIL OF COLUMN MKD AS -3C2"
+    ],
+    "drn": {
+      "name": "IRCON",
+      "date": "01.06.2026"
+    },
+    "chd": {
+      "name": "TML/NBT",
+      "date": "01.06.2026"
+    },
+    "app": {
+      "name": "SSA",
+      "date": "01.06.2026"
+    }
+  },
+  "mark_locations": [
+    {
+      "mark_no": "3C2",
+      "grid_location": "37a-39a/LA",
+      "level": "EL. +24.500"
+    }
+  ],
+  "bom": {
+    "assembly": {
+      "erection_mark": "3C2",
+      "item_no": "",
+      "section": "",
+      "length_mm": null,
+      "qty": 1,
+      "pc_wt": 26121.53,
+      "net_kg": 25826.95,
+      "gross_kg": 26121.53,
+      "material": "",
+      "remarks": "",
+      "surface_area_m2": 254.57,
+      "bbox": [
+        2468.48828125,
+        110.88423156738281,
+        3334.75537109375,
+        132.51194943019323
+      ]
+    },
+    "parts": [
+      {
+        "erection_mark": "",
+        "item_no": "3C2",
+        "section": "WH1200X500X40X32",
+        "length_mm": 7989.5,
+        "qty": 1,
+        "pc_wt": 4756.5,
+        "net_kg": 4748.68,
+        "gross_kg": 4756.5,
+        "material": "E350BR(UT)",
+        "remarks": "",
+        "surface_area_m2": 34.72,
+        "bbox": [
+          2468.48828125,
+          132.51194943019323,
+          3334.75537109375,
+          151.14395795549666
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m471",
+        "section": "WH1200X500X40X32",
+        "length_mm": 7589.5,
+        "qty": 1,
+        "pc_wt": 4518.36,
+        "net_kg": 4510.54,
+        "gross_kg": 4518.36,
+        "material": "E350BR(UT)",
+        "remarks": "",
+        "surface_area_m2": 32.99,
+        "bbox": [
+          2468.48828125,
+          151.14395795549666,
+          3334.75537109375,
+          169.87031119210377
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m484",
+        "section": "ISA50X50X6",
+        "length_mm": 809.0,
+        "qty": 7,
+        "pc_wt": 3.61,
+        "net_kg": 25.25,
+        "gross_kg": 25.25,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 0.16,
+        "bbox": [
+          2468.48828125,
+          169.87031119210377,
+          3334.75537109375,
+          188.59662955147877
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m496",
+        "section": "WH1200X500X40X32",
+        "length_mm": 6764.5,
+        "qty": 1,
+        "pc_wt": 4027.2,
+        "net_kg": 4019.38,
+        "gross_kg": 4027.2,
+        "material": "E350BR(UT)",
+        "remarks": "",
+        "surface_area_m2": 29.41,
+        "bbox": [
+          2468.48828125,
+          188.59662955147877,
+          3334.75537109375,
+          207.32298278808594
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m497",
+        "section": "WH1200X500X40X32",
+        "length_mm": 7164.5,
+        "qty": 1,
+        "pc_wt": 4265.34,
+        "net_kg": 4257.52,
+        "gross_kg": 4265.34,
+        "material": "E350BR(UT)",
+        "remarks": "",
+        "surface_area_m2": 31.14,
+        "bbox": [
+          2468.48828125,
+          207.32298278808594,
+          3334.75537109375,
+          226.04937090192522
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m503",
+        "section": "WH500X300X16X10",
+        "length_mm": 2468.0,
+        "qty": 1,
+        "pc_wt": 276.66,
+        "net_kg": 240.46,
+        "gross_kg": 276.66,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 4.82,
+        "bbox": [
+          2468.48828125,
+          226.04937090192522,
+          3334.75537109375,
+          244.77570506504605
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m504",
+        "section": "WH400X500X20X10",
+        "length_mm": 2468.0,
+        "qty": 4,
+        "pc_wt": 457.22,
+        "net_kg": 1526.7,
+        "gross_kg": 1828.89,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 5.92,
+        "bbox": [
+          2468.48828125,
+          244.77570506504605,
+          3334.75537109375,
+          263.5020768301828
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m505",
+        "section": "ISA200X200X20",
+        "length_mm": 1950.0,
+        "qty": 4,
+        "pc_wt": 116.95,
+        "net_kg": 467.8,
+        "gross_kg": 467.8,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 1.53,
+        "bbox": [
+          2468.48828125,
+          263.5020768301828,
+          3334.75537109375,
+          282.22841535295754
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m506",
+        "section": "ISA200X200X20",
+        "length_mm": 2607.8,
+        "qty": 2,
+        "pc_wt": 156.4,
+        "net_kg": 312.8,
+        "gross_kg": 312.8,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 2.05,
+        "bbox": [
+          2468.48828125,
+          282.22841535295754,
+          3334.75537109375,
+          300.95473371233254
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m507",
+        "section": "ISA200X200X20",
+        "length_mm": 2522.7,
+        "qty": 2,
+        "pc_wt": 151.29,
+        "net_kg": 302.59,
+        "gross_kg": 302.59,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 1.98,
+        "bbox": [
+          2468.48828125,
+          300.95473371233254,
+          3334.75537109375,
+          319.6811043875558
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m517",
+        "section": "ISA75X75X8",
+        "length_mm": 1138.0,
+        "qty": 12,
+        "pc_wt": 10.18,
+        "net_kg": 122.2,
+        "gross_kg": 122.21,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 0.33,
+        "bbox": [
+          2468.48828125,
+          319.6811043875558,
+          3334.75537109375,
+          338.4074489048549
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m518",
+        "section": "ISA75X75X8",
+        "length_mm": 1449.1,
+        "qty": 2,
+        "pc_wt": 12.97,
+        "net_kg": 24.65,
+        "gross_kg": 25.94,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 0.42,
+        "bbox": [
+          2468.48828125,
+          338.4074489048549,
+          3334.75537109375,
+          357.13380214146207
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m519",
+        "section": "ISA75X75X8",
+        "length_mm": 1449.1,
+        "qty": 2,
+        "pc_wt": 12.97,
+        "net_kg": 24.65,
+        "gross_kg": 25.94,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 0.42,
+        "bbox": [
+          2468.48828125,
+          357.13380214146207,
+          3334.75537109375,
+          375.8601553780692
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m520",
+        "section": "ISA75X75X8",
+        "length_mm": 1319.2,
+        "qty": 2,
+        "pc_wt": 11.81,
+        "net_kg": 22.68,
+        "gross_kg": 23.61,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 0.39,
+        "bbox": [
+          2468.48828125,
+          375.8601553780692,
+          3334.75537109375,
+          394.5864824567522
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m521",
+        "section": "ISA75X75X8",
+        "length_mm": 1319.2,
+        "qty": 2,
+        "pc_wt": 11.81,
+        "net_kg": 22.68,
+        "gross_kg": 23.61,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 0.39,
+        "bbox": [
+          2468.48828125,
+          394.5864824567522,
+          3334.75537109375,
+          413.3128356933594
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m766",
+        "section": "ISMC150",
+        "length_mm": 1379.9,
+        "qty": 7,
+        "pc_wt": 23.07,
+        "net_kg": 161.51,
+        "gross_kg": 161.51,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 0.78,
+        "bbox": [
+          2468.48828125,
+          413.3128356933594,
+          3334.75537109375,
+          432.0392150878906
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3m767",
+        "section": "ISMC150",
+        "length_mm": 1379.9,
+        "qty": 1,
+        "pc_wt": 23.07,
+        "net_kg": 23.07,
+        "gross_kg": 23.07,
+        "material": "E250A",
+        "remarks": "",
+        "surface_area_m2": 0.78,
+        "bbox": [
+          2468.48828125,
+          432.0392150878906,
+          3334.75537109375,
+          450.7655508858817
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p32",
+        "section": "PL10*287",
+        "length_mm": 447.8,
+        "qty": 2,
+        "pc_wt": 10.08,
+        "net_kg": 17.36,
+        "gross_kg": 20.17,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.23,
+        "bbox": [
+          2468.48828125,
+          450.7655508858817,
+          3334.75537109375,
+          469.49190412248885
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p33",
+        "section": "PL20*200",
+        "length_mm": 561.0,
+        "qty": 2,
+        "pc_wt": 17.62,
+        "net_kg": 35.23,
+        "gross_kg": 35.23,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.25,
+        "bbox": [
+          2468.48828125,
+          469.49190412248885,
+          3334.75537109375,
+          488.2182835170201
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p34",
+        "section": "PL20*200",
+        "length_mm": 379.0,
+        "qty": 2,
+        "pc_wt": 11.9,
+        "net_kg": 23.8,
+        "gross_kg": 23.8,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.17,
+        "bbox": [
+          2468.48828125,
+          488.2182835170201,
+          3334.75537109375,
+          506.94459969656805
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p36",
+        "section": "PL20*200",
+        "length_mm": 390.0,
+        "qty": 2,
+        "pc_wt": 12.25,
+        "net_kg": 24.49,
+        "gross_kg": 24.49,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.18,
+        "bbox": [
+          2468.48828125,
+          506.94459969656805,
+          3334.75537109375,
+          525.6709420340402
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p37",
+        "section": "PL10*379",
+        "length_mm": 380.0,
+        "qty": 2,
+        "pc_wt": 11.31,
+        "net_kg": 22.49,
+        "gross_kg": 22.61,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.3,
+        "bbox": [
+          2468.48828125,
+          525.6709420340402,
+          3334.75537109375,
+          544.3972778320312
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p51",
+        "section": "PL25*200",
+        "length_mm": 359.0,
+        "qty": 2,
+        "pc_wt": 14.09,
+        "net_kg": 28.18,
+        "gross_kg": 28.18,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.17,
+        "bbox": [
+          2468.48828125,
+          544.3972778320312,
+          3334.75537109375,
+          563.1236136300223
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p283",
+        "section": "PL16*646",
+        "length_mm": 1687.3,
+        "qty": 2,
+        "pc_wt": 137.0,
+        "net_kg": 234.11,
+        "gross_kg": 274.0,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 1.93,
+        "bbox": [
+          2468.48828125,
+          563.1236136300223,
+          3334.75537109375,
+          581.8499930245536
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p295",
+        "section": "PL32*500",
+        "length_mm": 1200.0,
+        "qty": 4,
+        "pc_wt": 150.72,
+        "net_kg": 602.88,
+        "gross_kg": 602.88,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 1.31,
+        "bbox": [
+          2468.48828125,
+          581.8499930245536,
+          3334.75537109375,
+          600.5763113839286
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p307",
+        "section": "PL14*234",
+        "length_mm": 1120.0,
+        "qty": 20,
+        "pc_wt": 28.8,
+        "net_kg": 575.17,
+        "gross_kg": 576.05,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.56,
+        "bbox": [
+          2468.48828125,
+          600.5763113839286,
+          3334.75537109375,
+          619.3026733398438
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p308",
+        "section": "PL16*234",
+        "length_mm": 1116.0,
+        "qty": 4,
+        "pc_wt": 32.8,
+        "net_kg": 130.36,
+        "gross_kg": 131.2,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.56,
+        "bbox": [
+          2468.48828125,
+          619.3026733398438,
+          3334.75537109375,
+          638.029061453683
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p309",
+        "section": "PL20*234",
+        "length_mm": 1116.0,
+        "qty": 16,
+        "pc_wt": 41.0,
+        "net_kg": 650.72,
+        "gross_kg": 655.99,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.57,
+        "bbox": [
+          2468.48828125,
+          638.029061453683,
+          3334.75537109375,
+          656.755379813058
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p319",
+        "section": "PL25*650",
+        "length_mm": 737.8,
+        "qty": 2,
+        "pc_wt": 94.06,
+        "net_kg": 140.75,
+        "gross_kg": 188.13,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.77,
+        "bbox": [
+          2468.48828125,
+          656.755379813058,
+          3334.75537109375,
+          675.4817330496652
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p332",
+        "section": "PL16*473",
+        "length_mm": 474.3,
+        "qty": 4,
+        "pc_wt": 28.18,
+        "net_kg": 92.14,
+        "gross_kg": 112.7,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.39,
+        "bbox": [
+          2468.48828125,
+          675.4817330496652,
+          3334.75537109375,
+          694.2081211635045
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p333",
+        "section": "PL16*496",
+        "length_mm": 1498.4,
+        "qty": 2,
+        "pc_wt": 93.29,
+        "net_kg": 178.54,
+        "gross_kg": 186.58,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 1.48,
+        "bbox": [
+          2468.48828125,
+          694.2081211635045,
+          3334.75537109375,
+          712.9344569614955
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p334",
+        "section": "PL16*490",
+        "length_mm": 671.6,
+        "qty": 2,
+        "pc_wt": 41.31,
+        "net_kg": 61.62,
+        "gross_kg": 82.62,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.52,
+        "bbox": [
+          2468.48828125,
+          712.9344569614955,
+          3334.75537109375,
+          731.6607753208705
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p436",
+        "section": "PL20*230",
+        "length_mm": 447.0,
+        "qty": 2,
+        "pc_wt": 16.14,
+        "net_kg": 32.28,
+        "gross_kg": 32.28,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.23,
+        "bbox": [
+          2468.48828125,
+          731.6607753208705,
+          3334.75537109375,
+          750.3870936802455
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p437",
+        "section": "PL12*225",
+        "length_mm": 447.0,
+        "qty": 2,
+        "pc_wt": 9.47,
+        "net_kg": 15.41,
+        "gross_kg": 18.95,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.18,
+        "bbox": [
+          2468.48828125,
+          750.3870936802455,
+          3334.75537109375,
+          769.1134643554688
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p438",
+        "section": "PL20*200",
+        "length_mm": 255.0,
+        "qty": 2,
+        "pc_wt": 8.01,
+        "net_kg": 16.01,
+        "gross_kg": 16.01,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.12,
+        "bbox": [
+          2468.48828125,
+          769.1134643554688,
+          3334.75537109375,
+          787.839852469308
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p439",
+        "section": "PL10*255",
+        "length_mm": 480.0,
+        "qty": 2,
+        "pc_wt": 9.61,
+        "net_kg": 19.02,
+        "gross_kg": 19.22,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.26,
+        "bbox": [
+          2468.48828125,
+          787.839852469308,
+          3334.75537109375,
+          806.566170828683
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p440",
+        "section": "PL20*200",
+        "length_mm": 488.0,
+        "qty": 1,
+        "pc_wt": 15.32,
+        "net_kg": 15.32,
+        "gross_kg": 15.32,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.22,
+        "bbox": [
+          2468.48828125,
+          806.566170828683,
+          3334.75537109375,
+          825.2925240652902
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p441",
+        "section": "PL20*200",
+        "length_mm": 488.0,
+        "qty": 1,
+        "pc_wt": 15.32,
+        "net_kg": 15.32,
+        "gross_kg": 15.32,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.22,
+        "bbox": [
+          2468.48828125,
+          825.2925240652902,
+          3334.75537109375,
+          844.0188947405134
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p463",
+        "section": "PL10*200",
+        "length_mm": 471.0,
+        "qty": 2,
+        "pc_wt": 7.39,
+        "net_kg": 12.24,
+        "gross_kg": 14.79,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.17,
+        "bbox": [
+          2468.48828125,
+          844.0188947405134,
+          3334.75537109375,
+          862.7452305385045
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p464",
+        "section": "PL25*250",
+        "length_mm": 259.0,
+        "qty": 2,
+        "pc_wt": 12.71,
+        "net_kg": 25.41,
+        "gross_kg": 25.41,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.15,
+        "bbox": [
+          2468.48828125,
+          862.7452305385045,
+          3334.75537109375,
+          881.4715837751116
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p465",
+        "section": "PL16*259",
+        "length_mm": 375.0,
+        "qty": 2,
+        "pc_wt": 12.2,
+        "net_kg": 24.08,
+        "gross_kg": 24.4,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.21,
+        "bbox": [
+          2468.48828125,
+          881.4715837751116,
+          3334.75537109375,
+          900.1979108537946
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p467",
+        "section": "PL25*250",
+        "length_mm": 385.0,
+        "qty": 1,
+        "pc_wt": 18.89,
+        "net_kg": 18.89,
+        "gross_kg": 18.89,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.22,
+        "bbox": [
+          2468.48828125,
+          900.1979108537946,
+          3334.75537109375,
+          918.9242553710938
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p469",
+        "section": "PL25*280",
+        "length_mm": 471.0,
+        "qty": 2,
+        "pc_wt": 25.88,
+        "net_kg": 51.76,
+        "gross_kg": 51.76,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.3,
+        "bbox": [
+          2468.48828125,
+          918.9242553710938,
+          3334.75537109375,
+          937.650634765625
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p471",
+        "section": "PL25*250",
+        "length_mm": 385.0,
+        "qty": 1,
+        "pc_wt": 18.89,
+        "net_kg": 18.89,
+        "gross_kg": 18.89,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.22,
+        "bbox": [
+          2468.48828125,
+          937.650634765625,
+          3334.75537109375,
+          956.3769792829241
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p511",
+        "section": "PL20*630",
+        "length_mm": 1105.5,
+        "qty": 1,
+        "pc_wt": 109.26,
+        "net_kg": 74.74,
+        "gross_kg": 109.26,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 1.01,
+        "bbox": [
+          2468.48828125,
+          956.3769792829241,
+          3334.75537109375,
+          975.1033063616071
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p518",
+        "section": "PL20*630",
+        "length_mm": 1105.5,
+        "qty": 1,
+        "pc_wt": 109.26,
+        "net_kg": 74.74,
+        "gross_kg": 109.26,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 1.01,
+        "bbox": [
+          2468.48828125,
+          975.1033063616071,
+          3334.75537109375,
+          993.8296508789062
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p525",
+        "section": "PL16*359",
+        "length_mm": 475.0,
+        "qty": 2,
+        "pc_wt": 21.42,
+        "net_kg": 42.52,
+        "gross_kg": 42.84,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.36,
+        "bbox": [
+          2468.48828125,
+          993.8296508789062,
+          3334.75537109375,
+          1012.5560368129186
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p526",
+        "section": "PL25*200",
+        "length_mm": 485.0,
+        "qty": 1,
+        "pc_wt": 19.04,
+        "net_kg": 19.04,
+        "gross_kg": 19.04,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.23,
+        "bbox": [
+          2468.48828125,
+          1012.5560368129186,
+          3334.75537109375,
+          1031.2823987688337
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p527",
+        "section": "PL25*230",
+        "length_mm": 571.0,
+        "qty": 2,
+        "pc_wt": 25.77,
+        "net_kg": 51.55,
+        "gross_kg": 51.55,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.3,
+        "bbox": [
+          2468.48828125,
+          1031.2823987688337,
+          3334.75537109375,
+          1050.0087193080358
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p528",
+        "section": "PL25*200",
+        "length_mm": 485.0,
+        "qty": 1,
+        "pc_wt": 19.04,
+        "net_kg": 19.04,
+        "gross_kg": 19.04,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.23,
+        "bbox": [
+          2468.48828125,
+          1050.0087193080358,
+          3334.75537109375,
+          1068.7350638253347
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p530",
+        "section": "PL14*452",
+        "length_mm": 517.2,
+        "qty": 2,
+        "pc_wt": 25.71,
+        "net_kg": 45.4,
+        "gross_kg": 51.41,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.44,
+        "bbox": [
+          2468.48828125,
+          1068.7350638253347,
+          3334.75537109375,
+          1087.461443219866
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p531",
+        "section": "PL20*630",
+        "length_mm": 630.0,
+        "qty": 2,
+        "pc_wt": 62.27,
+        "net_kg": 101.29,
+        "gross_kg": 124.53,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.69,
+        "bbox": [
+          2468.48828125,
+          1087.461443219866,
+          3334.75537109375,
+          1106.1877964564733
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p557",
+        "section": "PL25*234",
+        "length_mm": 1120.0,
+        "qty": 8,
+        "pc_wt": 51.43,
+        "net_kg": 410.84,
+        "gross_kg": 411.47,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.59,
+        "bbox": [
+          2468.48828125,
+          1106.1877964564733,
+          3334.75537109375,
+          1124.9141322544642
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p567",
+        "section": "PL12*200",
+        "length_mm": 631.0,
+        "qty": 7,
+        "pc_wt": 11.89,
+        "net_kg": 66.26,
+        "gross_kg": 83.22,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.22,
+        "bbox": [
+          2468.48828125,
+          1124.9141322544642,
+          3334.75537109375,
+          1143.6404767717634
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p569",
+        "section": "PL16*260",
+        "length_mm": 629.0,
+        "qty": 11,
+        "pc_wt": 20.54,
+        "net_kg": 224.85,
+        "gross_kg": 225.95,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.35,
+        "bbox": [
+          2468.48828125,
+          1143.6404767717634,
+          3334.75537109375,
+          1162.3668300083705
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p586",
+        "section": "PL12*164",
+        "length_mm": 631.0,
+        "qty": 4,
+        "pc_wt": 9.75,
+        "net_kg": 31.49,
+        "gross_kg": 38.99,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.18,
+        "bbox": [
+          2468.48828125,
+          1162.3668300083705,
+          3334.75537109375,
+          1181.0931745256696
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p615",
+        "section": "PL12*250",
+        "length_mm": 561.0,
+        "qty": 2,
+        "pc_wt": 13.21,
+        "net_kg": 19.87,
+        "gross_kg": 26.42,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.23,
+        "bbox": [
+          2468.48828125,
+          1181.0931745256696,
+          3334.75537109375,
+          1199.8195190429688
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p616",
+        "section": "PL20*200",
+        "length_mm": 411.0,
+        "qty": 2,
+        "pc_wt": 12.91,
+        "net_kg": 25.81,
+        "gross_kg": 25.81,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.19,
+        "bbox": [
+          2468.48828125,
+          1199.8195190429688,
+          3334.75537109375,
+          1218.5458722795759
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p617",
+        "section": "PL20*200",
+        "length_mm": 229.0,
+        "qty": 2,
+        "pc_wt": 7.19,
+        "net_kg": 14.38,
+        "gross_kg": 14.38,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.11,
+        "bbox": [
+          2468.48828125,
+          1218.5458722795759,
+          3334.75537109375,
+          1237.272225516183
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p618",
+        "section": "PL10*229",
+        "length_mm": 380.0,
+        "qty": 2,
+        "pc_wt": 6.83,
+        "net_kg": 13.54,
+        "gross_kg": 13.66,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.18,
+        "bbox": [
+          2468.48828125,
+          1237.272225516183,
+          3334.75537109375,
+          1255.998570033482
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p620",
+        "section": "PL20*200",
+        "length_mm": 390.0,
+        "qty": 2,
+        "pc_wt": 12.25,
+        "net_kg": 24.49,
+        "gross_kg": 24.49,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.18,
+        "bbox": [
+          2468.48828125,
+          1255.998570033482,
+          3334.75537109375,
+          1274.7249145507812
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p622",
+        "section": "PL25*200",
+        "length_mm": 548.0,
+        "qty": 2,
+        "pc_wt": 21.51,
+        "net_kg": 43.02,
+        "gross_kg": 43.02,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.26,
+        "bbox": [
+          2468.48828125,
+          1274.7249145507812,
+          3334.75537109375,
+          1293.4512765066966
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p623",
+        "section": "PL25*200",
+        "length_mm": 350.0,
+        "qty": 2,
+        "pc_wt": 13.74,
+        "net_kg": 27.47,
+        "gross_kg": 27.47,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.17,
+        "bbox": [
+          2468.48828125,
+          1293.4512765066966,
+          3334.75537109375,
+          1312.1776297433034
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p624",
+        "section": "PL10*250",
+        "length_mm": 548.0,
+        "qty": 2,
+        "pc_wt": 10.75,
+        "net_kg": 18.85,
+        "gross_kg": 21.51,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.25,
+        "bbox": [
+          2468.48828125,
+          1312.1776297433034,
+          3334.75537109375,
+          1330.9039655412946
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p625",
+        "section": "PL25*200",
+        "length_mm": 385.0,
+        "qty": 3,
+        "pc_wt": 15.11,
+        "net_kg": 45.33,
+        "gross_kg": 45.33,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.18,
+        "bbox": [
+          2468.48828125,
+          1330.9039655412946,
+          3334.75537109375,
+          1349.6303013392858
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p626",
+        "section": "PL12*350",
+        "length_mm": 375.0,
+        "qty": 2,
+        "pc_wt": 12.36,
+        "net_kg": 24.58,
+        "gross_kg": 24.73,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.28,
+        "bbox": [
+          2468.48828125,
+          1349.6303013392858,
+          3334.75537109375,
+          1368.3566632952009
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p627",
+        "section": "PL25*200",
+        "length_mm": 473.0,
+        "qty": 2,
+        "pc_wt": 18.57,
+        "net_kg": 37.13,
+        "gross_kg": 37.13,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.22,
+        "bbox": [
+          2468.48828125,
+          1368.3566632952009,
+          3334.75537109375,
+          1387.083016531808
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p628",
+        "section": "PL25*200",
+        "length_mm": 200.0,
+        "qty": 2,
+        "pc_wt": 7.85,
+        "net_kg": 15.7,
+        "gross_kg": 15.7,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.1,
+        "bbox": [
+          2468.48828125,
+          1387.083016531808,
+          3334.75537109375,
+          1405.8093436104912
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p630",
+        "section": "PL25*200",
+        "length_mm": 385.0,
+        "qty": 1,
+        "pc_wt": 15.11,
+        "net_kg": 15.11,
+        "gross_kg": 15.11,
+        "material": "E350BR",
+        "remarks": "",
+        "surface_area_m2": 0.18,
+        "bbox": [
+          2468.48828125,
+          1405.8093436104912,
+          3334.75537109375,
+          1424.5356794084823
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p631",
+        "section": "PL12*200",
+        "length_mm": 375.0,
+        "qty": 2,
+        "pc_wt": 7.07,
+        "net_kg": 13.98,
+        "gross_kg": 14.13,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.16,
+        "bbox": [
+          2468.48828125,
+          1424.5356794084823,
+          3334.75537109375,
+          1443.2620675223216
+        ]
+      },
+      {
+        "erection_mark": "",
+        "item_no": "3p741",
+        "section": "PL14*471",
+        "length_mm": 607.3,
+        "qty": 2,
+        "pc_wt": 31.46,
+        "net_kg": 56.16,
+        "gross_kg": 62.92,
+        "material": "E350A",
+        "remarks": "",
+        "surface_area_m2": 0.54,
+        "bbox": [
+          2468.48828125,
+          1443.2620675223216,
+          3334.75537109375,
+          1465.4110107421875
+        ]
+      }
+    ],
+    "totals": {
+      "net_kg": 25826.95,
+      "gross_kg": 26121.53,
+      "surface_area_m2": 254.57
+    },
+    "bbox": [
+      2468.48828125,
+      62.310302734375,
+      3334.75537109375,
+      1484.1422119140625
+    ]
+  },
+  "abstract": {
+    "rows": [
+      {
+        "sr": 1,
+        "description": "ISA50X50X6",
+        "total_wt": 25.25
+      },
+      {
+        "sr": 2,
+        "description": "ISA75X75X8",
+        "total_wt": 221.3
+      },
+      {
+        "sr": 3,
+        "description": "ISA200X200X20",
+        "total_wt": 1083.19
+      },
+      {
+        "sr": 4,
+        "description": "ISMC150",
+        "total_wt": 184.58
+      },
+      {
+        "sr": 5,
+        "description": "WH400X500X20X10",
+        "total_wt": 1828.89
+      },
+      {
+        "sr": 6,
+        "description": "WH500X300X16X10",
+        "total_wt": 276.66
+      },
+      {
+        "sr": 7,
+        "description": "WH1200X500X40X32",
+        "total_wt": 17567.41
+      },
+      {
+        "sr": 8,
+        "description": "PL 10 THK",
+        "total_wt": 111.96
+      },
+      {
+        "sr": 9,
+        "description": "PL 12 THK",
+        "total_wt": 206.44
+      },
+      {
+        "sr": 10,
+        "description": "PL 14 THK",
+        "total_wt": 690.39
+      },
+      {
+        "sr": 11,
+        "description": "PL 16 THK",
+        "total_wt": 1080.28
+      },
+      {
+        "sr": 12,
+        "description": "PL 20 THK",
+        "total_wt": 1226.2
+      },
+      {
+        "sr": 13,
+        "description": "PL 25 THK",
+        "total_wt": 1016.12
+      },
+      {
+        "sr": 14,
+        "description": "PL 32 THK",
+        "total_wt": 602.88
+      }
+    ],
+    "total_kg": 26121.53
+  },
+  "bolts": [
+    {
+      "assembly_mark": "3FR3",
+      "bolt_dia": "20",
+      "bolt_type": "HEX",
+      "bolt_length": "105",
+      "bolt_qty": "8",
+      "bolt_grade": "8.8XOX",
+      "bolt_spec": "IS:1364(II)-2023",
+      "bolt_material": "IS:1367 (I) 2014",
+      "nut_dia": "20",
+      "nut_qty": "16",
+      "nut_grade": "8.8XOX",
+      "nut_spec": "IS:1364(III)-2018",
+      "nut_material": "IS:1367 (VI) 2025",
+      "washer_dia": "22",
+      "washer_type": "FLAT-E",
+      "washer_qty": "8",
+      "washer_spec": "IS:2016 - 1967",
+      "washer_material": "IS:1570 (II) 1979",
+      "taper_dia": "",
+      "taper_type": "",
+      "taper_qty": "",
+      "taper_spec": "",
+      "taper_material": ""
+    },
+    {
+      "assembly_mark": "3C1",
+      "bolt_dia": "24",
+      "bolt_type": "HEX",
+      "bolt_length": "150",
+      "bolt_qty": "88",
+      "bolt_grade": "10.9XOX",
+      "bolt_spec": "IS:1364(II)-2023",
+      "bolt_material": "IS:1367 (I) 2014",
+      "nut_dia": "24",
+      "nut_qty": "176",
+      "nut_grade": "10.9XOX",
+      "nut_spec": "IS:1364(III)-2018",
+      "nut_material": "IS:1367 (VI) 2025",
+      "washer_dia": "26",
+      "washer_type": "FLAT-E",
+      "washer_qty": "88",
+      "washer_spec": "IS:2016 - 1967",
+      "washer_material": "IS:1570 (II) 1979",
+      "taper_dia": "",
+      "taper_type": "",
+      "taper_qty": "",
+      "taper_spec": "",
+      "taper_material": ""
+    }
+  ],
+  "revisions": [
+    {
+      "rev": "0",
+      "date": "01.06.2026",
+      "description": "ISSUED FOR CONSTRUCTION",
+      "drn": "IRCON",
+      "chd": "TML/NBT",
+      "app": "SSA"
+    }
+  ],
+  "notes": [
+    "1. ALL DIMENSIONS ARE IN mm & LEVELS ARE IN METER(UNO)",
+    "2. ALL WELDS SHALL BE 6MM FILLET WELDS U.N.O. TST-SFD-46-01-01-07-000-14201 TO 14216",
+    "3. FOR MARKING REF. DRG. NO.",
+    "4. ALL PERMANENT BOLTS ARE FULL THREADED.",
+    "5. ERECTION BOLT/”C” CLAMP/”L” CLAMP AS APPLICABLE SHALL BE USED DURING STRUCTURAL ASSEMBLY IN FABRICATION SHOP."
+  ],
+  "part_marks": [
+    "3C1",
+    "3C2",
+    "3FR3",
+    "3m471",
+    "3m484",
+    "3m496",
+    "3m497",
+    "3m503",
+    "3m504",
+    "3m505",
+    "3m506",
+    "3m507",
+    "3m517",
+    "3m518",
+    "3m519",
+    "3m520",
+    "3m521",
+    "3m766",
+    "3m767",
+    "3p283",
+    "3p295",
+    "3p307",
+    "3p308",
+    "3p309",
+    "3p319",
+    "3p32",
+    "3p33",
+    "3p332",
+    "3p333",
+    "3p334",
+    "3p34",
+    "3p36",
+    "3p37",
+    "3p436",
+    "3p437",
+    "3p438",
+    "3p439",
+    "3p440",
+    "3p441",
+    "3p463",
+    "3p464",
+    "3p465",
+    "3p467",
+    "3p469",
+    "3p471",
+    "3p51",
+    "3p511",
+    "3p518",
+    "3p525",
+    "3p526",
+    "3p527",
+    "3p528",
+    "3p530",
+    "3p531",
+    "3p557",
+    "3p567",
+    "3p569",
+    "3p586",
+    "3p615",
+    "3p616",
+    "3p617",
+    "3p618",
+    "3p620",
+    "3p622",
+    "3p623",
+    "3p624",
+    "3p625",
+    "3p626",
+    "3p627",
+    "3p628",
+    "3p630",
+    "3p631",
+    "3p741"
+  ],
+  "view_labels": [
+    {
+      "label": "A - A",
+      "kind": "section",
+      "ref": "A",
+      "scale": "1:25",
+      "bbox": [
+        308.5751037597656,
+        1918.5169677734375,
+        336.0453186035156,
+        1935.630615234375
+      ],
+      "cell": "P3"
+    },
+    {
+      "label": "B - B",
+      "kind": "section",
+      "ref": "B",
+      "scale": "1:25",
+      "bbox": [
+        1468.07861328125,
+        1873.1112060546875,
+        1495.548828125,
+        1890.224853515625
+      ],
+      "cell": "N11"
+    },
+    {
+      "label": "C - C",
+      "kind": "section",
+      "ref": "C",
+      "scale": "1:20",
+      "bbox": [
+        2441.336669921875,
+        1745.9244384765625,
+        2470.173828125,
+        1763.0380859375
+      ],
+      "cell": "N18"
+    },
+    {
+      "label": "D - D",
+      "kind": "section",
+      "ref": "D",
+      "scale": "1:25",
+      "bbox": [
+        1592.3060302734375,
+        2151.7265625,
+        1621.14306640625,
+        2168.840087890625
+      ],
+      "cell": "Q12"
+    },
+    {
+      "label": "E - E",
+      "kind": "section",
+      "ref": "E",
+      "scale": "1:25",
+      "bbox": [
+        2007.5975341796875,
+        1342.0535888671875,
+        2035.0677490234375,
+        1359.167236328125
+      ],
+      "cell": "K15"
+    },
+    {
+      "label": "F - F",
+      "kind": "section",
+      "ref": "F",
+      "scale": "1:25",
+      "bbox": [
+        2006.4725341796875,
+        1617.4739990234375,
+        2032.5496826171875,
+        1634.587646484375
+      ],
+      "cell": "M15"
+    },
+    {
+      "label": "G - G",
+      "kind": "section",
+      "ref": "G",
+      "scale": "1:25",
+      "bbox": [
+        2795.751220703125,
+        1906.322998046875,
+        2825.99658203125,
+        1923.4366455078125
+      ],
+      "cell": "P20"
+    },
+    {
+      "label": "H - H",
+      "kind": "section",
+      "ref": "H",
+      "scale": "1:25",
+      "bbox": [
+        3168.126220703125,
+        1744.7933349609375,
+        3196.96337890625,
+        1761.906982421875
+      ],
+      "cell": "N23"
+    },
+    {
+      "label": "L - L",
+      "kind": "section",
+      "ref": "L",
+      "scale": "1:25",
+      "bbox": [
+        1954.8001708984375,
+        1809.4830322265625,
+        1979.5367431640625,
+        1826.5966796875
+      ],
+      "cell": "N14"
+    },
+    {
+      "label": "M - M",
+      "kind": "section",
+      "ref": "M",
+      "scale": "1:25",
+      "bbox": [
+        1788.4755859375,
+        1847.1060791015625,
+        1820.087646484375,
+        1864.2197265625
+      ],
+      "cell": "N13"
+    },
+    {
+      "label": "J - J",
+      "kind": "section",
+      "ref": "J",
+      "scale": "1:25",
+      "bbox": [
+        2025.2691650390625,
+        937.9580688476562,
+        2048.612548828125,
+        955.0716552734375
+      ],
+      "cell": "G15"
+    },
+    {
+      "label": "K - K",
+      "kind": "section",
+      "ref": "K",
+      "scale": "1:25",
+      "bbox": [
+        2029.3350830078125,
+        599.1171264648438,
+        2056.805419921875,
+        616.230712890625
+      ],
+      "cell": "D15"
+    },
+    {
+      "label": "M - M",
+      "kind": "section",
+      "ref": "M",
+      "scale": "1:25",
+      "bbox": [
+        2462.534423828125,
+        1913.156494140625,
+        2494.146728515625,
+        1930.2701416015625
+      ],
+      "cell": "P18"
+    },
+    {
+      "label": "N - N",
+      "kind": "section",
+      "ref": "N",
+      "scale": "1:25",
+      "bbox": [
+        2208.40869140625,
+        217.2274627685547,
+        2237.245849609375,
+        234.34103393554688
+      ],
+      "cell": "B16"
+    },
+    {
+      "label": "O - O",
+      "kind": "section",
+      "ref": "O",
+      "scale": "1:25",
+      "bbox": [
+        2296.23828125,
+        1870.89404296875,
+        2326.4833984375,
+        1888.0076904296875
+      ],
+      "cell": "N17"
+    },
+    {
+      "label": "P - P",
+      "kind": "section",
+      "ref": "P",
+      "scale": "1:25",
+      "bbox": [
+        2008.5355224609375,
+        243.5602264404297,
+        2036.0057373046875,
+        260.6737976074219
+      ],
+      "cell": "B15"
+    },
+    {
+      "label": "Q - Q",
+      "kind": "section",
+      "ref": "Q",
+      "scale": "1:25",
+      "bbox": [
+        2087.053466796875,
+        235.3007049560547,
+        2117.298583984375,
+        252.41427612304688
+      ],
+      "cell": "B15"
+    },
+    {
+      "label": "R - R",
+      "kind": "section",
+      "ref": "R",
+      "scale": "1:25",
+      "bbox": [
+        1391.254150390625,
+        2145.200439453125,
+        1420.0911865234375,
+        2162.31396484375
+      ],
+      "cell": "Q10"
+    },
+    {
+      "label": "S - S",
+      "kind": "section",
+      "ref": "S",
+      "scale": "1:25",
+      "bbox": [
+        653.9849243164062,
+        2160.9931640625,
+        681.4552001953125,
+        2178.106689453125
+      ],
+      "cell": "Q5"
+    },
+    {
+      "label": "T - T",
+      "kind": "section",
+      "ref": "T",
+      "scale": "1:25",
+      "bbox": [
+        1026.7669677734375,
+        2158.952880859375,
+        1052.8441162109375,
+        2176.06640625
+      ],
+      "cell": "Q8"
+    },
+    {
+      "label": "U - U",
+      "kind": "section",
+      "ref": "U",
+      "scale": "1:25",
+      "bbox": [
+        1974.4176025390625,
+        2031.2696533203125,
+        2003.2545166015625,
+        2048.38330078125
+      ],
+      "cell": "Q15"
+    },
+    {
+      "label": "V - V",
+      "kind": "section",
+      "ref": "V",
+      "scale": "1:25",
+      "bbox": [
+        307.1099548339844,
+        2109.21142578125,
+        334.5801696777344,
+        2126.324951171875
+      ],
+      "cell": "Q3"
+    },
+    {
+      "label": "W - W",
+      "kind": "section",
+      "ref": "W",
+      "scale": "1:25",
+      "bbox": [
+        1822.4425048828125,
+        2140.61767578125,
+        1856.7880859375,
+        2157.731201171875
+      ],
+      "cell": "Q14"
+    },
+    {
+      "label": "X - X",
+      "kind": "section",
+      "ref": "X",
+      "scale": "1:25",
+      "bbox": [
+        1788.0540771484375,
+        232.0028533935547,
+        1815.5242919921875,
+        249.11642456054688
+      ],
+      "cell": "B13"
+    },
+    {
+      "label": "Y - Y",
+      "kind": "section",
+      "ref": "Y",
+      "scale": "1:25",
+      "bbox": [
+        2161.6318359375,
+        1816.328857421875,
+        2189.10205078125,
+        1833.4425048828125
+      ],
+      "cell": "N16"
+    },
+    {
+      "label": "Z - Z",
+      "kind": "section",
+      "ref": "Z",
+      "scale": "1:25",
+      "bbox": [
+        2513.690185546875,
+        1929.602783203125,
+        2539.767333984375,
+        1946.7164306640625
+      ],
+      "cell": "P18"
+    },
+    {
+      "label": "1 - 1",
+      "kind": "section",
+      "ref": "1",
+      "scale": "1:25",
+      "bbox": [
+        2374.3134765625,
+        1379.4432373046875,
+        2399.0498046875,
+        1396.556884765625
+      ],
+      "cell": "K17"
+    }
+  ],
+  "regions": {
+    "bom": [
+      2468.48828125,
+      62.310302734375,
+      3334.75537109375,
+      1484.1422119140625
+    ],
+    "title_block": [
+      2589.576416015625,
+      2104.14306640625,
+      3398.739990234375,
+      2412.282958984375
+    ],
+    "abstract": [
+      2252.740478515625,
+      28.16562271118164,
+      2547.190673828125,
+      329.935546875
+    ],
+    "bolts": [
+      2176.089599609375,
+      1982.651123046875,
+      3398.517333984375,
+      2109.14306640625
+    ],
+    "notes": [
+      817.5970458984375,
+      2223.862548828125,
+      1242.5970458984375,
+      2323.862548828125
+    ],
+    "mark_location": [
+      42.69450378417969,
+      34.90592956542969,
+      372.27613830566406,
+      135.46046447753906
+    ],
+    "revisions": [
+      0.0,
+      2119.258056640625,
+      815.3565063476562,
+      2341.14501953125
+    ]
+  },
+  "bom_crosscheck": [],
+  "pipeline_errors": [],
+  "checks": [
+    {
+      "id": "bom.row_arith",
+      "level": "pass",
+      "message": "All 71 rows: qty × pc wt = gross (± rounding).",
+      "region": "bom"
+    },
+    {
+      "id": "bom.gross_total",
+      "level": "pass",
+      "message": "Σ part gross × assembly qty 1 = 26121.52; grand total = 26121.53.",
+      "region": "bom"
+    },
+    {
+      "id": "bom.assembly_row",
+      "level": "pass",
+      "message": "Assembly row 3C2 gross 26121.53 vs grand total 26121.53.",
+      "region": "bom"
+    },
+    {
+      "id": "bom.net_total",
+      "level": "warn",
+      "message": "Σ part net = 25452.81 (× qty 1 = 25452.81); net total = 25826.95. Tekla net totals often differ; informational.",
+      "region": "bom"
+    },
+    {
+      "id": "bom.crosscheck",
+      "level": "pass",
+      "message": "find_tables() second parse agrees on every row (section, length, qty, gross, material).",
+      "region": "bom"
+    },
+    {
+      "id": "marks.bom_on_sheet",
+      "level": "pass",
+      "message": "Every BOM mark appears on the drawing.",
+      "region": "bom"
+    },
+    {
+      "id": "marks.extra",
+      "level": "pass",
+      "message": "Marks on sheet not in BOM (connected/referenced assemblies): ['3C1', '3FR3']",
+      "region": "views"
+    },
+    {
+      "id": "title.weight",
+      "level": "pass",
+      "message": "Title block weight 26121.53 vs BOM gross 26121.53.",
+      "region": "title_block"
+    },
+    {
+      "id": "mark_location.assembly",
+      "level": "pass",
+      "message": "Mark box ['3C2'] vs BOM assembly '3C2'.",
+      "region": "bom"
+    },
+    {
+      "id": "mark_location.count",
+      "level": "pass",
+      "message": "1 erection location(s) listed; assembly qty 1.",
+      "region": "bom"
+    },
+    {
+      "id": "abstract.total",
+      "level": "pass",
+      "message": "Σ abstract = 26121.55; abstract total = 26121.53; BOM gross = 26121.53.",
+      "region": "abstract"
+    },
+    {
+      "id": "abstract.by_section",
+      "level": "pass",
+      "message": "Every abstract row equals the BOM gross for that section/plate thickness.",
+      "region": "bom"
+    },
+    {
+      "id": "title.drawing_no",
+      "level": "pass",
+      "message": "Drawing no. TST-SFD-46-01-01-07-000-14281 matches file name.",
+      "region": "title_block"
+    }
+  ]
+}
